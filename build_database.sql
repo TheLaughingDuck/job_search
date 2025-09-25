@@ -1,0 +1,25 @@
+CREATE TABLE IF NOT EXISTS jobs (
+    id integer PRIMARY KEY,
+    job_title text,
+    url text,
+    date_posted text,
+    has_blurred_data boolean,
+    company text,
+    final_url text,
+    source_url text,
+    location text,
+    remote boolean,
+    hybrid boolean,
+    salary_string text,
+    seniority text,
+    company_domain text,
+    reposted boolean,
+    date_reposted text,
+    employment_statuses text,
+    technology_slugs text,
+    description text,
+
+    accepting_applications boolean DEFAULT TRUE,
+    i_have_applied boolean DEFAULT FALSE,
+    relevance_score integer
+);

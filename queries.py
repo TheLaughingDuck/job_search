@@ -20,7 +20,7 @@ def show_request_count():
         raise ValueError(f"Failed to retrieve user info. The request returned status code {res.status_code}")
     
     content = json.loads(res.content)
-    print(f"\nAPI credits used today: {content["team"]["api_credits_used_current_period"]}/{content["team"]["api_credits"]}")
+    print(f"\nAPI credits used: {content["team"]["api_credits_used_current_period"]}/{content["team"]["api_credits"]}")
 
 
 def get_jobs(limit=50, masked_data=True):
@@ -62,7 +62,14 @@ def get_jobs(limit=50, masked_data=True):
                         )
     
     if res.status_code != 200:
-        raise ValueError(f"Bad status code: {res.status_code}")
+        if res.status_code == 402: print("Status code 402: Payment Required (you probably exceeded the API limit this month).")
+        elif res.status_code == 405: print("Status code 405: Method not allowed (you probably used some outdated endpoint).")
+        else: print(f"Unknown status code {res.status_code}")
+        
+        # Shut down
+        show_request_count()
+        return None
+    elif res.status_code == 200: pass
 
     
     # Present the retrieved jobs, and save them to the database file.

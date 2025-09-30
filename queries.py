@@ -32,8 +32,6 @@ def get_jobs(limit=50, masked_data=True):
     
     # This regulates whether the data is masked. When masked, requests do not consume API credits, which is suitable for testing.
     # This appears to be superfluous
-    if masked_data == True: masked_data = "true"
-    elif masked_data == False: masked_data = "false"
 
     HEADERS = {
         'Content-Type': "application/json",
@@ -52,7 +50,7 @@ def get_jobs(limit=50, masked_data=True):
         'blur_company_data': masked_data, # set to false in order to get full information (when enabled it does not consume API token)
         'job_title_or': ['Data Scientist', 'Data Engineer', 'Data Analyst', 'Dataingenjör'],
         'job_title_not': ['Senior'],
-        'job_seniority_or': ['junior'],
+        #'job_seniority_or': ['junior'],
         'job_id_not': job_ids,
         'job_location_or': [{'id': '2673722'}, {'id': '2673730'}, {'id': '2673723'},
                             {'id': '2694759'}, {'id': '2694762'}, {'id': '2688367'}, {'id': '2688368'}]
@@ -78,32 +76,33 @@ def get_jobs(limit=50, masked_data=True):
 
     for job in content["data"]:
         print("-----------------------------------------------")
-        print("\n".join([job["job_title"], job["company"]]))
+        print("\n".join([job["job_title"], job["company"], job["location"]]))
         
         #VALUES = "({id}, '{job_title}', '{url}', '{date_posted}', {has_blurred_data}, '{company}', '{final_url}', '{source_url}', '{location}', {remote}, {hybrid}, '{salary_string}', '{seniority}', '{company_domain}', {reposted}, '{date_reposted}', {technology_slugs}, '{description}')".format(id=job["id"], job_title=job["job_title"], url=job["url"], date_posted=job["date_posted"], has_blurred_data=job["has_blurred_data"], company=job["company"], final_url=job["final_url"], source_url=job["source_url"], location=job["source_url"], remote=job["remote"], hybrid=job["hybrid"], salary_string=job["salary_string"], seniority=job["seniority"], company_domain=job["company_domain"], reposted=job["reposted"], date_reposted=job["date_reposted"], technology_slugs=f"{job["technology_slugs"]}", description=job["description"])
 
         # Insert job in database
-        conn = sqlite3.connect("job_search_database.sqlite", isolation_level=None)
-        conn.execute("INSERT INTO jobs (id, job_title, url, date_posted, has_blurred_data, company, final_url, source_url, location, remote, hybrid, salary_string, seniority, company_domain, reposted, date_reposted, employment_statuses, technology_slugs, description) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);",
-                    (job["id"],
-                    job["job_title"],
-                    job["url"],
-                    job["date_posted"],
-                    job["has_blurred_data"],
-                    job["company"],
-                    job["final_url"],
-                    job["source_url"],
-                    job["location"],
-                    job["remote"],
-                    job["hybrid"],
-                    job["salary_string"],
-                    job["seniority"],
-                    job["company_domain"],
-                    job["reposted"],
-                    job["date_reposted"],
-                    json.dumps(job["employment_statuses"]),
-                    json.dumps(job["technology_slugs"]),
-                    job["description"])).fetchall()
+        if not masked_data:
+            conn = sqlite3.connect("job_search_database.sqlite", isolation_level=None)
+            conn.execute("INSERT INTO jobs (id, job_title, url, date_posted, has_blurred_data, company, final_url, source_url, location, remote, hybrid, salary_string, seniority, company_domain, reposted, date_reposted, employment_statuses, technology_slugs, description) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);",
+                        (job["id"],
+                        job["job_title"],
+                        job["url"],
+                        job["date_posted"],
+                        job["has_blurred_data"],
+                        job["company"],
+                        job["final_url"],
+                        job["source_url"],
+                        job["location"],
+                        job["remote"],
+                        job["hybrid"],
+                        job["salary_string"],
+                        job["seniority"],
+                        job["company_domain"],
+                        job["reposted"],
+                        job["date_reposted"],
+                        json.dumps(job["employment_statuses"]),
+                        json.dumps(job["technology_slugs"]),
+                        job["description"])).fetchall()
 
         # Insert company in database if not already exists
         ## I'm ignoring this for now, since it doesn't appear very useful to maintain information of specific companies.

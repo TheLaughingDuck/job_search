@@ -20,5 +20,6 @@ CREATE TABLE IF NOT EXISTS jobs (
     description text,
 
     relevance_score integer,
-    status text default '---'
+    status text default '---',
+    comment text default ''
 );

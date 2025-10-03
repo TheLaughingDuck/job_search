@@ -3,7 +3,7 @@ from tkinter import ttk, messagebox
 import sqlite3
 from queries import get_jobs
 
-DB_FILE = "job_search_database.sqlite"
+DB_FILE = 'mock_database.sqlite' ##"job_search_database.sqlite"
 
 class JobAppGUI:
     def __init__(self, root):
@@ -43,13 +43,14 @@ class JobAppGUI:
         self.retrieved_jobs_label.pack(side="left", padx=50)
 
         # --- Job List (Treeview) ---
-        self.tree = ttk.Treeview(root, columns=("jobtitle", "company", "location", "dateposted", "status", "closed"), show="headings")
+        self.tree = ttk.Treeview(root, columns=("jobtitle", "company", "location", "dateposted", "status", "comment"), show="headings")
         self.tree.heading("jobtitle", text="Title", command=lambda: self.sort_by("jobtitle"))
         self.tree.heading("company", text="Company", command=lambda: self.sort_by("company"))
         self.tree.heading("location", text="Location", command=lambda: self.sort_by("location"))
         self.tree.heading("dateposted", text="Date posted", command=lambda: self.sort_by("dateposted"))
         #self.tree.heading("description", text="Description", command=lambda: self.sort_by("description"))
         self.tree.heading("status", text="Status", command=lambda: self.sort_by("status"))
+        self.tree.heading("comment", text="Comment", command=lambda: self.sort_by("comment"))
         self.tree.pack(fill="both", expand=True, padx=10, pady=5)
 
         print("\nQuerying 'TheirStack' for job listings...")
@@ -113,7 +114,7 @@ class JobAppGUI:
         self.description_window(job_id=selected)
 
     def set_filter(self):
-        self.job_query = "SELECT id, job_title, company, location, date_posted, status FROM jobs"
+        self.job_query = "SELECT id, job_title, company, location, date_posted, status, comment FROM jobs"
 
         if self.filter_setting.get() == "Show all": pass
         elif self.filter_setting.get() == "Show live applications": self.job_query += " WHERE status = 'Applied'"
@@ -132,15 +133,17 @@ class JobAppGUI:
         jobtitle_var = tk.StringVar()
         company_var = tk.StringVar()
         url_var = tk.StringVar()
+        comment_var = tk.StringVar()
         status_var = tk.StringVar()
 
         if job_id:
             c = self.conn.cursor()
-            c.execute("SELECT job_title, company, url, status FROM jobs WHERE id=?", (job_id,))
-            jobtitle, company, url, status = c.fetchone()
+            c.execute("SELECT job_title, company, url, comment, status FROM jobs WHERE id=?", (job_id,))
+            jobtitle, company, url, comment, status = c.fetchone()
             jobtitle_var.set(jobtitle)
             company_var.set(company)
             url_var.set(url)
+            comment_var.set(comment)
             status_var.set(status)
         else:
             status_var.set('---')
@@ -159,14 +162,17 @@ class JobAppGUI:
         status_menu = tk.OptionMenu(win, status_var, '---', 'Applied', 'Rejected', 'I lack requirements', 'Closed')
         status_menu.grid(row=3, column=1, padx=5, pady=5)        
 
+        tk.Label(win, text="comment").grid(row=4, column=0, padx=5, pady=5)
+        tk.Entry(win, textvariable=comment_var, width=40).grid(row=4, column=1, padx=5, pady=5)
+
         def save():
             c = self.conn.cursor()
             if job_id:
-                c.execute("UPDATE jobs SET job_title=?, company=?, url=?, status=? WHERE id=?",
-                          (jobtitle_var.get(), company_var.get(), url_var.get(), status_var.get(), job_id))
+                c.execute("UPDATE jobs SET job_title=?, company=?, url=?, comment=?, status=? WHERE id=?",
+                          (jobtitle_var.get(), company_var.get(), url_var.get(), comment_var.get(), status_var.get(), job_id))
             else:
-                c.execute("INSERT INTO jobs (id, job_title, company, url, status) VALUES (?, ?, ?, ?, ?)",
-                          (job_id, jobtitle_var.get(), company_var.get(), url_var.get(), status_var.get()))
+                c.execute("INSERT INTO jobs (id, job_title, company, url, comment, status) VALUES (?, ?, ?, ?, ?, ?)",
+                          (job_id, jobtitle_var.get(), company_var.get(), url_var.get(), comment_var.get(), status_var.get()))
             self.conn.commit()
             self.refresh_jobs()
             win.destroy()

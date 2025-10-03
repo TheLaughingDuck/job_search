@@ -3,7 +3,11 @@ from tkinter import ttk, messagebox
 import sqlite3
 from queries import get_jobs
 
-DB_FILE = "mock_database.sqlite"
+from os import getenv
+import dotenv
+
+dotenv.load_dotenv()
+DB_FILE = getenv("DATABASE_NAME")
 
 class JobAppGUI:
     def __init__(self, root):

@@ -50,11 +50,10 @@ class JobAppGUI:
         self.tree.heading("dateposted", text="Date posted", command=lambda: self.sort_by("dateposted"))
         #self.tree.heading("description", text="Description", command=lambda: self.sort_by("description"))
         self.tree.heading("status", text="Status", command=lambda: self.sort_by("status"))
-        self.tree.heading("closed", text="Closed?", command=lambda: self.sort_by("closed"))
         self.tree.pack(fill="both", expand=True, padx=10, pady=5)
 
         print("\nQuerying 'TheirStack' for job listings...")
-        #get_jobs(masked_data=False)
+        get_jobs(masked_data=False)
 
         self.refresh_jobs()
 
@@ -114,11 +113,11 @@ class JobAppGUI:
         self.description_window(job_id=selected)
 
     def set_filter(self):
-        self.job_query = "SELECT id, job_title, company, location, date_posted, status, closed FROM jobs"
+        self.job_query = "SELECT id, job_title, company, location, date_posted, status FROM jobs"
 
         if self.filter_setting.get() == "Show all": pass
         elif self.filter_setting.get() == "Show live applications": self.job_query += " WHERE status = 'Applied'"
-        elif self.filter_setting.get() == "Show applicable": self.job_query += " WHERE ((status != 'Applied' AND status != 'Rejected') OR status IS NULL) AND closed = 0"
+        elif self.filter_setting.get() == "Show applicable": self.job_query += " WHERE status = '---'"
         elif self.filter_setting.get() == "Show rejected": self.job_query += " WHERE status = 'Rejected'"
 
         print(self.job_query)
@@ -134,25 +133,17 @@ class JobAppGUI:
         company_var = tk.StringVar()
         url_var = tk.StringVar()
         status_var = tk.StringVar()
-        closed_var = tk.BooleanVar()
 
         if job_id:
             c = self.conn.cursor()
-            c.execute("SELECT job_title, company, url, status, closed FROM jobs WHERE id=?", (job_id,))
-            jobtitle, company, url, status, closed = c.fetchone()
+            c.execute("SELECT job_title, company, url, status FROM jobs WHERE id=?", (job_id,))
+            jobtitle, company, url, status = c.fetchone()
             jobtitle_var.set(jobtitle)
             company_var.set(company)
             url_var.set(url)
             status_var.set(status)
-            closed_var.set(closed)
-        
-        print(f"VALUE: {closed_var.get()}")
-
-        def toggle_close():
-            closed_var.set(not closed_var.get())
-            text = "Closed." if closed_var.get() else "Open to applications"
-            closed_label.configure(text=text)
-            closed_label.update()
+        else:
+            status_var.set('---')
 
         ######## Labels and entryboxes
         tk.Label(win, text="Job title").grid(row=0, column=0, padx=5, pady=5)
@@ -165,22 +156,17 @@ class JobAppGUI:
         tk.Entry(win, textvariable=url_var, width=40).grid(row=2, column=1, padx=5, pady=5)
 
         tk.Label(win, text="Status").grid(row=3, column=0, padx=5, pady=5)
-        status_menu = tk.OptionMenu(win, status_var, '---', 'Applied', 'Rejected')
-        status_menu.grid(row=3, column=1, padx=5, pady=5)
-
-        tk.Button(win, text="Toggle Closed", command=toggle_close).grid(row=4, column=0, padx=5, pady=5)
-        closed_label = tk.Label(win, text="Closed." if closed_var.get() else "Open to applications")
-        closed_label.grid(row=4, column=1, padx=5, pady=5)
-        
+        status_menu = tk.OptionMenu(win, status_var, '---', 'Applied', 'Rejected', 'I lack requirements', 'Closed')
+        status_menu.grid(row=3, column=1, padx=5, pady=5)        
 
         def save():
             c = self.conn.cursor()
             if job_id:
-                c.execute("UPDATE jobs SET job_title=?, company=?, url=?, status=?, closed=? WHERE id=?",
-                          (jobtitle_var.get(), company_var.get(), url_var.get(), status_var.get(), closed_var.get(), job_id))
+                c.execute("UPDATE jobs SET job_title=?, company=?, url=?, status=? WHERE id=?",
+                          (jobtitle_var.get(), company_var.get(), url_var.get(), status_var.get(), job_id))
             else:
-                c.execute("INSERT INTO jobs (id, job_title, company, url, status, closed) VALUES (?, ?, ?, ?, ?, ?)",
-                          (job_id, jobtitle_var.get(), company_var.get(), url_var.get(), status_var.get(), closed_var.get()))
+                c.execute("INSERT INTO jobs (id, job_title, company, url, status) VALUES (?, ?, ?, ?, ?)",
+                          (job_id, jobtitle_var.get(), company_var.get(), url_var.get(), status_var.get()))
             self.conn.commit()
             self.refresh_jobs()
             win.destroy()

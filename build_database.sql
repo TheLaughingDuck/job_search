@@ -19,7 +19,6 @@ CREATE TABLE IF NOT EXISTS jobs (
     technology_slugs text,
     description text,
 
-    accepting_applications boolean DEFAULT TRUE,
-    i_have_applied boolean DEFAULT FALSE,
-    relevance_score integer
+    relevance_score integer,
+    status text default '---'
 );

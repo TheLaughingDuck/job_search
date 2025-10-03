@@ -3,7 +3,7 @@ from tkinter import ttk, messagebox
 import sqlite3
 from queries import get_jobs
 
-DB_FILE = 'mock_database.sqlite' ##"job_search_database.sqlite"
+DB_FILE = "mock_database.sqlite"
 
 class JobAppGUI:
     def __init__(self, root):

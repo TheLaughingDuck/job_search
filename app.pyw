@@ -40,7 +40,7 @@ class JobAppGUI:
         self.filter_setting = tk.StringVar()
         self.filter_setting.set("Show all")
         filter_options = ['Show all', 'Show live applications', 'Show applicable', 'Show rejected']
-        tk.OptionMenu(filter_frame, self.filter_setting, *filter_options, command=self.refresh_jobs).pack(side="left", padx=5)
+        tk.OptionMenu(filter_frame, self.filter_setting, *filter_options, command=lambda _: self.refresh_jobs()).pack(side="left", padx=5)
         #tk.Button(filter_frame, text="Toggle Living Applications", command=self.show_live_applications).pack(side="left", padx=5)
         #tk.Button(filter_frame, text="Toggle Applicable", command=self.toggle_applicable).pack(side="left", padx=5)
         self.retrieved_jobs_label = tk.Label(filter_frame, text="---", borderwidth=1, relief="groove")
@@ -48,13 +48,13 @@ class JobAppGUI:
 
         # --- Job List (Treeview) ---
         self.tree = ttk.Treeview(root, columns=("jobtitle", "company", "location", "dateposted", "status", "comment"), show="headings")
-        self.tree.heading("jobtitle", text="Title", command=lambda: self.sort_by("jobtitle"))
-        self.tree.heading("company", text="Company", command=lambda: self.sort_by("company"))
-        self.tree.heading("location", text="Location", command=lambda: self.sort_by("location"))
-        self.tree.heading("dateposted", text="Date posted", command=lambda: self.sort_by("dateposted"))
+        self.tree.heading("jobtitle", text="Title", command=lambda: self.refresh_jobs("job_title"))
+        self.tree.heading("company", text="Company", command=lambda: self.refresh_jobs("company"))
+        self.tree.heading("location", text="Location", command=lambda: self.refresh_jobs("location"))
+        self.tree.heading("dateposted", text="Date posted", command=lambda: self.refresh_jobs("date_posted"))
         #self.tree.heading("description", text="Description", command=lambda: self.sort_by("description"))
-        self.tree.heading("status", text="Status", command=lambda: self.sort_by("status"))
-        self.tree.heading("comment", text="Comment", command=lambda: self.sort_by("comment"))
+        self.tree.heading("status", text="Status", command=lambda: self.refresh_jobs("status"))
+        self.tree.heading("comment", text="Comment", command=lambda: self.refresh_jobs("comment"))
         self.tree.pack(fill="both", expand=True, padx=10, pady=5)
 
         print("\nQuerying 'TheirStack' for job listings...")
@@ -66,29 +66,40 @@ class JobAppGUI:
         # Clear existing rows
         for row in self.tree.get_children():
             self.tree.delete(row)
-
-        # Update filter setting
-        self.set_filter()
-
-        c = self.conn.cursor()
-        # self.job_query = "SELECT id, job_title, company, location, date_posted, status, closed FROM jobs"
-        params = []
-
-        # if self.filter_var.get():
-        #     self.job_query += " WHERE"
-
-        #     if self.hide_un_applicable: self.job_query += " closed != TRUE AND status IS NOT 'Applied'"
-        #     if self.filter_var.get():
-        #         self.job_query += " company LIKE ? OR job_title LIKE ?"
-        #         like = f"%{self.filter_var.get()}%"
-        #         params.extend([like, like, like])
         
-        # Temporary solution
-        #query = "SELECT id, job_title, company, location, date_posted, status, closed FROM jobs WHERE closed != TRUE AND status IS NULL"
+        # Set up start of query
+        self.job_query = "SELECT id, job_title, company, location, date_posted, status, comment FROM jobs"
 
-        # if sort_by:
-        #     self.job_query += f" ORDER BY {sort_by}"
+        # Create variables to collect search parameters, and assemble the where query
+        params = []
+        where_query = []
 
+        # Check whether any user-specified filter applies
+        if self.filter_setting.get() != "Show all" or self.filter_var.get():
+            self.job_query += " WHERE "
+
+            # Adjust SQL query with relevant text FILTER
+            if self.filter_var.get():
+                where_query.append("(company LIKE ? OR job_title LIKE ?)")
+                like = f"%{self.filter_var.get()}%"
+                params.extend([like, like])
+
+        # Adjust SQL query with relevant status FILTER
+        if self.filter_setting.get() == "Show all": pass
+        elif self.filter_setting.get() == "Show live applications": where_query.append("status = 'Applied'")
+        elif self.filter_setting.get() == "Show applicable": where_query.append("status = '---'")
+        elif self.filter_setting.get() == "Show rejected": where_query.append("status = 'Rejected'")
+
+        # Adjust SQL query with relevant ordering
+        if sort_by:
+            self.job_query += f" ORDER BY {sort_by}"
+        
+        # Start cursor
+        c = self.conn.cursor()
+        
+        # Perform query and insert the results in the UI table
+        print(f"HERE MASTER!! {self.job_query}")
+        print(params)
         for row in c.execute(self.job_query, params):
             self.tree.insert("", "end", iid=row[0], values=row[1:])
         
@@ -116,16 +127,6 @@ class JobAppGUI:
             messagebox.showwarning("Select Job", "Please select a job.")
             return
         self.description_window(job_id=selected)
-
-    def set_filter(self):
-        self.job_query = "SELECT id, job_title, company, location, date_posted, status, comment FROM jobs"
-
-        if self.filter_setting.get() == "Show all": pass
-        elif self.filter_setting.get() == "Show live applications": self.job_query += " WHERE status = 'Applied'"
-        elif self.filter_setting.get() == "Show applicable": self.job_query += " WHERE status = '---'"
-        elif self.filter_setting.get() == "Show rejected": self.job_query += " WHERE status = 'Rejected'"
-
-        print(self.job_query)
 
     ###### ^ ###### TOP BUTTONS ###### ^ ######
 

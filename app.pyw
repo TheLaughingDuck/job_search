@@ -18,6 +18,9 @@ class JobAppGUI:
 
         self.retrieved_jobs = 0
         self.job_query = ""
+
+        # --- Button events ---
+        self.root.bind("<Return>", self.enter_key_pressed)
         
         # --- Top Buttons ---
         top_frame = tk.Frame(root)
@@ -108,6 +111,11 @@ class JobAppGUI:
         self.retrieved_jobs = len(self.tree.get_children())
         self.retrieved_jobs_label.configure(text="Showing {n_jobs} jobs".format(n_jobs=self.retrieved_jobs))
         self.retrieved_jobs_label.update()
+    
+    def enter_key_pressed(self, event):
+        '''Refresh the UI table when 'Return' is pressed.'''
+        #print(event.char, event.keysym, event.keycode)
+        self.refresh_jobs()
 
 
     ###### V ###### TOP BUTTONS ###### V ######

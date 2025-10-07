@@ -90,6 +90,8 @@ class JobAppGUI:
         elif self.filter_setting.get() == "Show applicable": where_query.append("status = '---'")
         elif self.filter_setting.get() == "Show rejected": where_query.append("status = 'Rejected'")
 
+        self.job_query += " AND ".join(where_query)
+
         # Adjust SQL query with relevant ordering
         if sort_by:
             self.job_query += f" ORDER BY {sort_by}"
@@ -98,8 +100,7 @@ class JobAppGUI:
         c = self.conn.cursor()
         
         # Perform query and insert the results in the UI table
-        print(f"HERE MASTER!! {self.job_query}")
-        print(params)
+        #print(f"The job query is:\n\t{self.job_query}")
         for row in c.execute(self.job_query, params):
             self.tree.insert("", "end", iid=row[0], values=row[1:])
         

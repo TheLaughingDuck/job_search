@@ -68,9 +68,8 @@ class JobAppGUI:
         self.tree.heading("comment", text="Comment", command=lambda: self.refresh_jobs("comment"))
         self.tree.pack(fill="both", expand=True, padx=10, pady=5)
 
-        print("\nQuerying 'TheirStack' for job listings...")
-        theirstack_token = json_get_key("keys.json", "THEIRSTACK_TOKEN")
-        get_jobs(masked_data=False, theirstack_token=theirstack_token)
+        # Query TheirStack for job listings
+        get_jobs(masked_data=False)
 
         self.refresh_jobs()
 

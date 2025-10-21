@@ -3,7 +3,7 @@ import sys
 import sqlite3
 
 import logging
-logging.basicConfig(filename="LOGS.log",
+logging.basicConfig(filename="LOG.log",
                     filemode="a",
                     format='%(asctime)s,%(msecs)03d %(name)s %(levelname)s %(message)s',
                     datefmt='%Y-%m-%d %H:%M:%S',
@@ -84,3 +84,43 @@ def build_db(db="db.sqlite"):
         logging.info(e)
 
 
+
+import json
+
+def json_get_key(fp, key):
+    '''
+    Opens a JSON file at `fp`, returns the value for `key`.
+    If the key doesn't exist, adds it with a null value (None) and updates the file.
+    '''
+    
+    try:
+        with open(fp, "r", encoding="utf-8") as f:
+            data = json.load(f)
+    except Exception as e:
+        data = {}
+
+    # If key doesn't exist, set it to None and update the file
+    if key not in data:
+        data[key] = ""
+        with open(fp, "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=4)
+
+    return data[key]
+
+def json_set_key(fp, key, val):
+    '''
+    Opens a JSON file at `fp`, and sets the value `val` for `key`.
+    If the key doesn't exist, adds it with a null value (None) and updates the file.
+    '''
+    
+    # Load the JSON file (create empty if it doesn't exist)
+    try:
+        with open(fp, "r", encoding="utf-8") as f:
+            data = json.load(f)
+    except Exception as e:
+        data = {}
+
+    # If key doesn't exist, set it to `val` and update the file
+    data[key] = val
+    with open(fp, "w", encoding="utf-8") as f:
+        json.dump(data, f, indent=4)

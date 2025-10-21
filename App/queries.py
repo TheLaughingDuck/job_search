@@ -6,6 +6,7 @@ import sqlite3
 
 from dotenv import load_dotenv
 load_dotenv()
+from utils import json_get_key
 
 def get_token_usage():
     '''
@@ -13,7 +14,7 @@ def get_token_usage():
     for the TheirStack job API.
     '''
 
-    TOKEN = os.getenv("THEIR_STACK_TOKEN")
+    TOKEN = json_get_key("keys.json", "THEIRSTACK_TOKEN") #os.getenv("THEIR_STACK_TOKEN")
 
     res = requests.get("https://api.theirstack.com/v0/users/me",
         headers={'Authorization': f"Bearer {TOKEN}"})
@@ -27,23 +28,21 @@ def get_token_usage():
     return (content["team"]["api_credits_used_current_period"], content["team"]["api_credits"])
 
 
-def get_jobs(limit=7, masked_data=True):
+def get_jobs(limit=7, masked_data=True, theirstack_token=None):
     '''
     Retrieves jobs with the pre-specified query.
     '''
-
-    TOKEN = os.getenv("THEIR_STACK_TOKEN")
     
-    # This regulates whether the data is masked. When masked, requests do not consume API credits, which is suitable for testing.
-    # This appears to be superfluous
+    # If no token is given
+    if not theirstack_token: return None
 
     HEADERS = {
         'Content-Type': "application/json",
-        'Authorization': f"Bearer {TOKEN}"
+        'Authorization': f"Bearer {theirstack_token}"
     }
 
     # Retrieve saved job id's, so that they can be excluded from the job query below.
-    conn = sqlite3.connect("job_search_database.sqlite", isolation_level=None)
+    conn = sqlite3.connect("db.sqlite", isolation_level=None)
     job_ids = [i[0] for i in conn.execute("SELECT id from jobs;").fetchall()]
 
     PAYLOAD = {

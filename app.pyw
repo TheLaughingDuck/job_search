@@ -29,6 +29,8 @@ class JobAppGUI:
         tk.Button(top_frame, text="Add Job", command=self.add_job).pack(side="left", padx=5)
         tk.Button(top_frame, text="Edit Job", command=self.edit_job).pack(side="left", padx=5)
         tk.Button(top_frame, text="Show Description", command=self.show_description).pack(side="left", padx=5)
+        self.program_info_label = tk.Label(top_frame, text="---", borderwidth=1, relief="groove")
+        self.program_info_label.pack(side="right")
         #tk.Button(top_frame, text="Delete Job", command=self.delete_job).pack(side="left", padx=5)
 
         # --- Filter / Sort ---
@@ -61,7 +63,7 @@ class JobAppGUI:
         self.tree.pack(fill="both", expand=True, padx=10, pady=5)
 
         print("\nQuerying 'TheirStack' for job listings...")
-        get_jobs(masked_data=False)
+        #get_jobs(masked_data=False)
 
         self.refresh_jobs()
 

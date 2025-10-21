@@ -8,7 +8,6 @@ logging.basicConfig(filename="LOG.log",
                     format='%(asctime)s,%(msecs)03d %(name)s %(levelname)s %(message)s',
                     datefmt='%Y-%m-%d %H:%M:%S',
                     level=logging.DEBUG)
-logging.info("Started utils")
 
 
 def run_sql(db="db.sqlite", script=None, string=None):

@@ -4,9 +4,14 @@ import json
 import os
 import sqlite3
 
-from dotenv import load_dotenv
-load_dotenv()
 from utils import json_get_key
+
+import logging
+logging.basicConfig(filename="LOG.log",
+                    filemode="a",
+                    format='%(asctime)s,%(msecs)03d %(name)s %(levelname)s %(message)s',
+                    datefmt='%Y-%m-%d %H:%M:%S',
+                    level=logging.DEBUG)
 
 def get_token_usage():
     '''
@@ -16,29 +21,33 @@ def get_token_usage():
 
     TOKEN = json_get_key("keys.json", "THEIRSTACK_TOKEN") #os.getenv("THEIR_STACK_TOKEN")
 
-    res = requests.get("https://api.theirstack.com/v0/users/me",
-        headers={'Authorization': f"Bearer {TOKEN}"})
+    try:
+        res = requests.get("https://api.theirstack.com/v0/users/me",
+            headers={'Authorization': f"Bearer {TOKEN}"})
+    except Exception as e:
+        logging.info(e)
     
-    if res.status_code != 200:
-        raise ValueError(f"Failed to retrieve user info. The request returned status code {res.status_code}")
+    if res.status_code == 200:
+        content = json.loads(res.content)
+        #print(f"\nAPI credits used: {content["team"]["api_credits_used_current_period"]}/{content["team"]["api_credits"]}")
+        return (content["team"]["api_credits_used_current_period"], content["team"]["api_credits"])
+    else:
+        if res.status_code == 402: logging.info("TheirStack gave status code 402: Payment Required (you probably exceeded the API limit this month).")
+        elif res.status_code == 401: logging.info("TheirStack gave status code 401: Invalid authentication credentials.")
+        elif res.status_code == 405: logging.info("TheirStack gave status code 405: Method not allowed (you probably used some outdated endpoint).")
+        else: logging.info(f"TheirStack gave unknown status code {res.status_code}")
     
-    content = json.loads(res.content)
-    print(f"\nAPI credits used: {content["team"]["api_credits_used_current_period"]}/{content["team"]["api_credits"]}")
-
-    return (content["team"]["api_credits_used_current_period"], content["team"]["api_credits"])
+    
 
 
-def get_jobs(limit=7, masked_data=True, theirstack_token=None):
+def get_jobs(limit=7, masked_data=True):
     '''
     Retrieves jobs with the pre-specified query.
     '''
     
-    # If no token is given
-    if not theirstack_token: return None
-
     HEADERS = {
         'Content-Type': "application/json",
-        'Authorization': f"Bearer {theirstack_token}"
+        'Authorization': f"Bearer {json_get_key("keys.json", "THEIRSTACK_TOKEN")}"
     }
 
     # Retrieve saved job id's, so that they can be excluded from the job query below.
@@ -59,15 +68,21 @@ def get_jobs(limit=7, masked_data=True, theirstack_token=None):
                             {'id': '2694759'}, {'id': '2694762'}, {'id': '2688367'}, {'id': '2688368'}]
     }
 
-    res = requests.post("https://api.theirstack.com/v1/jobs/search",
-                        headers=HEADERS,
-                        json=PAYLOAD
-                        )
+    try:
+        res = requests.post("https://api.theirstack.com/v1/jobs/search",
+                            headers=HEADERS,
+                            json=PAYLOAD
+                            )
+    except Exception as e:
+        logging.info(e)
+    
+    # Log the status code
     
     if res.status_code != 200:
-        if res.status_code == 402: print("Status code 402: Payment Required (you probably exceeded the API limit this month).")
-        elif res.status_code == 405: print("Status code 405: Method not allowed (you probably used some outdated endpoint).")
-        else: print(f"Unknown status code {res.status_code}")
+        if res.status_code == 402: logging.info("TheirStack gave status code 402: Payment Required (you probably exceeded the API limit this month).")
+        elif res.status_code == 401: logging.info("TheirStack gave status code 401: Invalid authentication credentials.")
+        elif res.status_code == 405: logging.info("TheirStack gave status code 405: Method not allowed (you probably used some outdated endpoint).")
+        else: logging.info(f"TheirStack gave unknown status code {res.status_code}")
         
         # Shut down
         get_token_usage()

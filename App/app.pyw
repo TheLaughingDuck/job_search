@@ -2,10 +2,10 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 import sqlite3
 from queries import get_jobs
-from utils import run_sql, build_db
+from utils import run_sql, build_db, json_get_key, json_set_key
 
 import logging
-logging.basicConfig(filename="LOGS.log",
+logging.basicConfig(filename="LOG.log",
                     filemode="a",
                     format='%(asctime)s,%(msecs)03d %(name)s %(levelname)s %(message)s',
                     datefmt='%Y-%m-%d %H:%M:%S',
@@ -36,6 +36,7 @@ class JobAppGUI:
         tk.Button(top_frame, text="Add Job", command=self.add_job).pack(side="left", padx=5)
         tk.Button(top_frame, text="Edit Job", command=self.edit_job).pack(side="left", padx=5)
         tk.Button(top_frame, text="Show Description", command=self.show_description).pack(side="left", padx=5)
+        tk.Button(top_frame, text="Settings", command=self.settings_window).pack(side="left", padx=5)
         #tk.Button(top_frame, text="Delete Job", command=self.delete_job).pack(side="left", padx=5)
 
         # --- Filter / Sort ---
@@ -67,8 +68,9 @@ class JobAppGUI:
         self.tree.heading("comment", text="Comment", command=lambda: self.refresh_jobs("comment"))
         self.tree.pack(fill="both", expand=True, padx=10, pady=5)
 
-        #print("\nQuerying 'TheirStack' for job listings...")
-        #get_jobs(masked_data=False)
+        print("\nQuerying 'TheirStack' for job listings...")
+        theirstack_token = json_get_key("keys.json", "THEIRSTACK_TOKEN")
+        get_jobs(masked_data=False, theirstack_token=theirstack_token)
 
         self.refresh_jobs()
 
@@ -211,8 +213,12 @@ class JobAppGUI:
         tk.Label(win, text="TheirStack API token").grid(row=0, column=0, padx=5, pady=5)
         tk.Entry(win, textvariable=theirstack_token_var, width=40).grid(row=0, column=1, padx=5, pady=5)
 
+        # Saving settings
+        def save():
+            json_set_key(fp="keys.json", key="THEIRSTACK_TOKEN", val=theirstack_token_var.get())
+            win.destroy()
 
-        # Save entered information
+        tk.Button(win, text="Save", font=("Courier", 20), width=10, command=save).grid(row=1, column=0, columnspan=2, pady=10)
 
     
 

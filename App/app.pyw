@@ -1,7 +1,7 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
 import sqlite3
-from queries import get_jobs
+from queries import get_jobs, get_token_usage
 from utils import run_sql, build_db, json_get_key, json_set_key, create_keys_file
 
 import logging
@@ -58,7 +58,11 @@ class JobAppGUI:
         #tk.Button(filter_frame, text="Toggle Living Applications", command=self.show_live_applications).pack(side="left", padx=5)
         #tk.Button(filter_frame, text="Toggle Applicable", command=self.toggle_applicable).pack(side="left", padx=5)
         self.retrieved_jobs_label = tk.Label(filter_frame, text="---", borderwidth=1, relief="groove")
-        self.retrieved_jobs_label.pack(side="left", padx=50)
+        self.retrieved_jobs_label.pack(side="left", padx=20)
+
+        # Show API token usage
+        self.api_token_label = tk.Label(filter_frame, text="---", borderwidth=1, relief="groove")
+        self.api_token_label.pack(side="left", padx=2)
 
         # --- Job List (Treeview) ---
         self.tree = ttk.Treeview(root, columns=("jobtitle", "company", "location", "dateposted", "status", "comment"), show="headings")
@@ -122,6 +126,10 @@ class JobAppGUI:
         self.retrieved_jobs = len(self.tree.get_children())
         self.retrieved_jobs_label.configure(text="Showing {n_jobs} jobs".format(n_jobs=self.retrieved_jobs))
         self.retrieved_jobs_label.update()
+
+        # Update label with token usage
+        self.api_token_label.configure(text="Used {} out of {} tokens".format(*get_token_usage()))
+        self.api_token_label.update()
     
     def enter_key_pressed(self, event):
         '''Refresh the UI table when 'Return' is pressed.'''

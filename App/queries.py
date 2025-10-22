@@ -34,8 +34,11 @@ def get_token_usage():
     else:
         if res.status_code == 402: logging.info("TheirStack gave status code 402: Payment Required (you probably exceeded the API limit this month).")
         elif res.status_code == 401: logging.info("TheirStack gave status code 401: Invalid authentication credentials.")
+        elif res.status_code == 404: logging.info("TheirStack gave status code 404: Not Found.")
         elif res.status_code == 405: logging.info("TheirStack gave status code 405: Method not allowed (you probably used some outdated endpoint).")
         else: logging.info(f"TheirStack gave unknown status code {res.status_code}")
+
+        return ("-","-")
     
     
 
@@ -91,7 +94,7 @@ def get_jobs(limit=5, masked_data=True):
         else: logging.info(f"TheirStack gave unknown status code {res.status_code}")
         
         # Shut down
-        get_token_usage()
+        #get_token_usage()
         return None
     elif res.status_code == 200: pass
 
@@ -100,7 +103,7 @@ def get_jobs(limit=5, masked_data=True):
     content = json.loads(res.content)
     if len(content["data"]) == 0:
         print("No jobs were found.")
-        get_token_usage()
+        #get_token_usage()
         return None
     else:
         print("The following job(s) were found:")
@@ -138,5 +141,5 @@ def get_jobs(limit=5, masked_data=True):
         # Insert company in database if not already exists
         ## I'm ignoring this for now, since it doesn't appear very useful to maintain information of specific companies.
 
-    get_token_usage()
+    #get_token_usage()
 

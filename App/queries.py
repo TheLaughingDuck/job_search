@@ -3,6 +3,7 @@ import requests
 import json
 import os
 import sqlite3
+import uuid
 
 from utils import json_get_key
 
@@ -34,13 +35,16 @@ def get_token_usage():
     else:
         if res.status_code == 402: logging.info("TheirStack gave status code 402: Payment Required (you probably exceeded the API limit this month).")
         elif res.status_code == 401: logging.info("TheirStack gave status code 401: Invalid authentication credentials.")
+        elif res.status_code == 404: logging.info("TheirStack gave status code 404: Not Found.")
         elif res.status_code == 405: logging.info("TheirStack gave status code 405: Method not allowed (you probably used some outdated endpoint).")
         else: logging.info(f"TheirStack gave unknown status code {res.status_code}")
+
+        return ("-","-")
     
     
 
 
-def get_jobs(limit=7, masked_data=True):
+def get_jobs(limit=5, masked_data=True):
     '''
     Retrieves jobs with the pre-specified query.
     '''
@@ -52,7 +56,10 @@ def get_jobs(limit=7, masked_data=True):
 
     # Retrieve saved job id's, so that they can be excluded from the job query below.
     conn = sqlite3.connect("db.sqlite", isolation_level=None)
-    job_ids = [i[0] for i in conn.execute("SELECT id from jobs;").fetchall()]
+    job_ids = [i[0] for i in conn.execute("SELECT id_theirstack from jobs;").fetchall()]
+
+    # Get locations for processing below
+    locations = json_get_key("keys.json", "locations")
 
     PAYLOAD = {
         'page': 0,
@@ -60,13 +67,16 @@ def get_jobs(limit=7, masked_data=True):
         'job_country_code_or': ['SE'],
         'posted_at_max_age_days': 30,
         'blur_company_data': masked_data, # set to false in order to get full information (when enabled it does not consume API token)
-        'job_title_or': ['Data Scientist', 'Data Engineer', 'Data Analyst', 'Dataingenjör', 'Machine Learning Engineer'],
-        'job_title_not': ['Senior'],
+        'job_title_or': json_get_key("keys.json", "job_title_or"), #['Data Scientist', 'Data Engineer', 'Data Analyst', 'Dataingenjör', 'Machine Learning Engineer'],
+        'job_title_not': json_get_key("keys.json", "job_title_not"), #['Senior'],
         #'job_seniority_or': ['junior'],
         'job_id_not': job_ids,
-        'job_location_or': [{'id': '2673722'}, {'id': '2673730'}, {'id': '2673723'},
-                            {'id': '2694759'}, {'id': '2694762'}, {'id': '2688367'}, {'id': '2688368'}]
+        'job_location_or': [locations[key][1] for key in locations if locations[key][0] == 1]
+        # 'job_location_or': [{'id': '2673722'}, {'id': '2673730'}, {'id': '2673723'},
+        #                     {'id': '2694759'}, {'id': '2694762'}, {'id': '2688367'}, {'id': '2688368'}]
     }
+
+    logging.info(f"Attempting job search with payload:\n\n\n{PAYLOAD}\n\n\n")
 
     try:
         res = requests.post("https://api.theirstack.com/v1/jobs/search",
@@ -85,7 +95,7 @@ def get_jobs(limit=7, masked_data=True):
         else: logging.info(f"TheirStack gave unknown status code {res.status_code}")
         
         # Shut down
-        get_token_usage()
+        #get_token_usage()
         return None
     elif res.status_code == 200: pass
 
@@ -94,7 +104,7 @@ def get_jobs(limit=7, masked_data=True):
     content = json.loads(res.content)
     if len(content["data"]) == 0:
         print("No jobs were found.")
-        get_token_usage()
+        #get_token_usage()
         return None
     else:
         print("The following job(s) were found:")
@@ -107,9 +117,10 @@ def get_jobs(limit=7, masked_data=True):
 
         # Insert job in database
         if not masked_data:
-            conn = sqlite3.connect("job_search_database.sqlite", isolation_level=None)
-            conn.execute("INSERT INTO jobs (id, job_title, url, date_posted, has_blurred_data, company, final_url, source_url, location, remote, hybrid, salary_string, seniority, company_domain, reposted, date_reposted, employment_statuses, technology_slugs, description) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);",
-                        (job["id"],
+            conn = sqlite3.connect("db.sqlite", isolation_level=None)
+            conn.execute("INSERT INTO jobs (id, id_theirstack, job_title, url, date_posted, has_blurred_data, company, final_url, source_url, location, remote, hybrid, salary_string, seniority, company_domain, reposted, date_reposted, employment_statuses, technology_slugs, description) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);",
+                        (uuid.uuid4().__str__(),
+                        job["id"],
                         job["job_title"],
                         job["url"],
                         job["date_posted"],
@@ -132,38 +143,5 @@ def get_jobs(limit=7, masked_data=True):
         # Insert company in database if not already exists
         ## I'm ignoring this for now, since it doesn't appear very useful to maintain information of specific companies.
 
-    get_token_usage()
+    #get_token_usage()
 
-
-def destroy_database():
-    '''Drop the jobs table. VERY BAD! BE CAREFUL!'''
-
-    print("You are about to DROP the jobs table. THIS IS DANGEROUS!")
-    print("It might contain important data, so please be careful!")
-    responses = []
-    
-    while True:
-        inp = input("Are you sure? [Y/n]>")
-
-        if inp == "Y": responses += "Y"
-        elif inp == "n":
-            print("Destruction aborted")
-            break
-
-        if responses == ["Y", "Y", "Y", "Y"]:
-            print("Ok, you seem really really sure. Let's drop the jobs table.")
-
-            conn = sqlite3.connect("job_search_database.sqlite", isolation_level=None)
-            conn.execute("DROP TABLE IF EXISTS jobs;")
-
-            break
-
-def build_database():
-    '''For building the database, particularly the jobs table.'''
-
-    conn = sqlite3.connect("job_search_database.sqlite", isolation_level=None)
-    with open("build_database.sql", "r") as f:
-        sql_script = f.read()
-        for statement in sql_script.split(";"):
-            conn.execute(statement)
-# %%

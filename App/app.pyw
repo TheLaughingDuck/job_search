@@ -77,7 +77,7 @@ class JobAppGUI:
         self.tree.pack(fill="both", expand=True, padx=10, pady=5)
 
         # Query TheirStack for job listings
-        get_jobs(masked_data=True)
+        get_jobs(masked_data=False)
 
         self.refresh_jobs()
 
@@ -141,7 +141,7 @@ class JobAppGUI:
     ###### V ###### TOP BUTTONS ###### V ######
 
     def add_job(self):
-        self.edit_window()
+        self.edit_window(job_id=False)
 
     def edit_job(self):
         selected = self.tree.focus()
@@ -160,7 +160,7 @@ class JobAppGUI:
     ###### ^ ###### TOP BUTTONS ###### ^ ######
 
 
-    def edit_window(self, job_id=None):
+    def edit_window(self, job_id):
         win = tk.Toplevel(self.root)
         win.title("Edit Job" if job_id else "Add Job")
 
@@ -199,7 +199,7 @@ class JobAppGUI:
         tk.Label(win, text="comment").grid(row=4, column=0, padx=5, pady=5)
         tk.Entry(win, textvariable=comment_var, width=40).grid(row=4, column=1, padx=5, pady=5)
 
-        def save():
+        def save(job_id=job_id):
             c = self.conn.cursor()
             if job_id:
                 c.execute("UPDATE jobs SET job_title=?, company=?, url=?, comment=?, status=? WHERE id=?",

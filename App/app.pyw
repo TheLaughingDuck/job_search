@@ -250,9 +250,22 @@ class JobAppGUI:
                 win.destroy()
             except Exception as e:
                 logging.info(e)
+                self.error_window(e)
 
         tk.Button(win, text="Save", font=("Courier", 20), width=10, command=save).grid(row=30, column=0, columnspan=2, pady=10)
 
+
+
+    def error_window(self, message="..."):
+        win = tk.Toplevel(self.root)
+        win.title("ERROR")
+
+        message = "An error occurred, outputting the following error message:\n\n" + str(message) + "\n\nSee the log file for further details."
+
+        tk.Label(win, text=message).pack(side="top")
+        tk.Button(win, text="OK", font=("Courier", 8), width=5, command=win.destroy).pack(side="bottom", pady=10)
+
+        
     
 
     def description_window(self, job_id=None):

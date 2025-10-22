@@ -123,3 +123,37 @@ def json_set_key(fp, key, val):
     data[key] = val
     with open(fp, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=4)
+
+def create_keys_file(fp="keys.json"):
+    '''
+    Create the keys file if it does not already exist.
+    '''
+
+    # Check if it exists
+    if not os.path.isfile(fp):
+        keys = {
+            "THEIRSTACK_TOKEN": "exampleexampleexample",
+            "job_title_or": [
+                "Receptionist,Painter,Data Scientist"
+            ],
+            "job_title_not": [
+                "Senior"
+            ],
+            "locations": {
+                "Stockholm": [0, {'id': '2673730'}],
+                "Stockholms Lan": [0, {'id': '2673722'}],
+                "Stockholms Kommun": [0, {'id': '2673723'}],
+                "Ostergotland Lan": [0, {'id': '2685867'}],
+                "Linkoping": [0, {'id': '2694762'}],
+                "Linkopings Kommun": [0, {'id': '2694759'}],
+                "Norrkoping": [0, {'id': '2688368'}],
+                "Norrkopings Kommun": [0, {'id': '2688367'}]
+            }
+        }
+
+        # Save the keys file
+        with open(fp, "w", encoding="utf-8") as f:
+            json.dump(keys, f, indent=4)
+
+    else:
+        logging.info("Attempted to create 'keys.json': it already exists.")

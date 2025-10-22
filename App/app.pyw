@@ -2,7 +2,7 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 import sqlite3
 from queries import get_jobs
-from utils import run_sql, build_db, json_get_key, json_set_key
+from utils import run_sql, build_db, json_get_key, json_set_key, create_keys_file
 
 import logging
 logging.basicConfig(filename="LOG.log",
@@ -21,6 +21,9 @@ class JobAppGUI:
         # Create database and connect
         build_db(db="db.sqlite")
         self.conn = sqlite3.connect("db.sqlite")
+
+        # Create keys file (if it doesn't already exist)
+        create_keys_file()
 
         # Environment variables
         self.retrieved_jobs = 0
@@ -205,19 +208,50 @@ class JobAppGUI:
         win = tk.Toplevel(self.root)
         win.title("Settings")
 
-        # Variables
-        theirstack_token_var = tk.StringVar()
-
         # TheirStack API token
-        tk.Label(win, text="TheirStack API token").grid(row=0, column=0, padx=5, pady=5)
+        theirstack_token_var = tk.StringVar()
+        theirstack_token_var.set(json_get_key("keys.json", "THEIRSTACK_TOKEN"))
+        tk.Label(win, text="TheirStack API token\n(without any surrounding quotation marks)").grid(row=0, column=0, padx=5, pady=5)
         tk.Entry(win, textvariable=theirstack_token_var, width=40).grid(row=0, column=1, padx=5, pady=5)
+
+        # Relevant job titles
+        job_title_or = tk.StringVar()
+        job_title_or.set(",".join(json_get_key("keys.json", "job_title_or")))
+        tk.Label(win, text="Job titles\n(separate multiple with commas, no space)").grid(row=2, column=0, padx=5, pady=5)
+        tk.Entry(win, textvariable=job_title_or, width=40).grid(row=2, column=1, padx=5, pady=5)
+
+        # Filter out jobs with
+        job_title_not = tk.StringVar()
+        job_title_not.set(",".join(json_get_key("keys.json", "job_title_not")))
+        tk.Label(win, text="Exclude job titles or seniority\n(e.g. 'Senior', separate multiple with commas, no space)").grid(row=3, column=0, padx=5, pady=5)
+        tk.Entry(win, textvariable=job_title_not, width=40).grid(row=3, column=1, padx=5, pady=5)
+
+        # Location checkboxes
+        locations = json_get_key("keys.json", "locations")
+        loc_keys = list(locations.keys())
+        loc_vars = {key: tk.IntVar(value=locations[key][0]) for key in loc_keys}
+        tk.Label(win, text="Select locations you are interested in.").grid(row=4, column=0)
+        for i, key in zip(range(0, len(loc_keys)), loc_keys):
+            tk.Checkbutton(win, text=key, variable=loc_vars[key], onvalue=1, offvalue=0).grid(row=5+i, column=0)
 
         # Saving settings
         def save():
-            json_set_key(fp="keys.json", key="THEIRSTACK_TOKEN", val=theirstack_token_var.get())
-            win.destroy()
+            try:
+                json_set_key(fp="keys.json", key="THEIRSTACK_TOKEN", val=theirstack_token_var.get())
+                json_set_key(fp="keys.json", key="job_title_or", val=job_title_or.get().split(","))
+                json_set_key(fp="keys.json", key="job_title_not", val=job_title_not.get().split(","))
 
-        tk.Button(win, text="Save", font=("Courier", 20), width=10, command=save).grid(row=1, column=0, columnspan=2, pady=10)
+                # Update locations in keys.json
+                for key in loc_keys:
+                    locations[key] = [loc_vars[key].get(), locations[key][1]]
+                json_set_key(fp="keys.json", key="locations", val=locations)
+
+                # Destroy the window
+                win.destroy()
+            except Exception as e:
+                logging.info(e)
+
+        tk.Button(win, text="Save", font=("Courier", 20), width=10, command=save).grid(row=30, column=0, columnspan=2, pady=10)
 
     
 

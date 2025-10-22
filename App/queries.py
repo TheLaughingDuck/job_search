@@ -119,7 +119,7 @@ def get_jobs(limit=5, masked_data=True):
         # Insert job in database
         if not masked_data:
             conn = sqlite3.connect("db.sqlite", isolation_level=None)
-            conn.execute("INSERT INTO jobs (id, id_theirstack, job_title, url, date_posted, has_blurred_data, company, final_url, source_url, location, remote, hybrid, salary_string, seniority, company_domain, reposted, date_reposted, employment_statuses, technology_slugs, description) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);",
+            conn.execute("INSERT INTO jobs (id, id_theirstack, job_title, url, date_posted, has_blurred_data, company, final_url, source_url, location, remote, hybrid, salary_string, seniority, company_domain, reposted, date_reposted, employment_statuses, technology_slugs, description) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);",
                         (uuid.uuid4().__str__(),
                         job["id"],
                         job["job_title"],

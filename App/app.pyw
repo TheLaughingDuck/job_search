@@ -42,7 +42,6 @@ class JobAppGUI:
         tk.Button(top_frame, text="Show Description", command=self.show_description).pack(side="left", padx=5)
         tk.Button(top_frame, text="Delete Job", command=self.delete_job).pack(side="left", padx=5)
         tk.Button(top_frame, text="Settings", command=self.settings_window).pack(side="left", padx=5)
-        tk.Button(top_frame, text="Find job listings", command=self.find_jobs).pack(side="left", padx=5)
 
         # --- Filter / Sort ---
         filter_frame = tk.Frame(root)
@@ -62,9 +61,12 @@ class JobAppGUI:
         self.retrieved_jobs_label = tk.Label(filter_frame, text="---", borderwidth=1, relief="groove")
         self.retrieved_jobs_label.pack(side="left", padx=20)
 
+        # API Request button
+        tk.Button(filter_frame, text="Find job listings", command=self.find_jobs).pack(side="left", padx=10)
+
         # Show API token usage
         self.api_token_label = tk.Label(filter_frame, text="---", borderwidth=1, relief="groove")
-        self.api_token_label.pack(side="left", padx=2)
+        self.api_token_label.pack(side="left", padx=5)
 
         # --- Job List (Treeview) ---
         self.tree = ttk.Treeview(root, columns=("jobtitle", "company", "location", "dateposted", "status", "comment"), show="headings")

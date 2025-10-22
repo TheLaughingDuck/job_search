@@ -44,7 +44,7 @@ def get_token_usage():
     
 
 
-def get_jobs(limit=5, masked_data=True):
+def get_jobs(limit=2, masked_data=True, save_locally=True):
     '''
     Retrieves jobs with the pre-specified query.
     '''
@@ -108,16 +108,17 @@ def get_jobs(limit=5, masked_data=True):
         #get_token_usage()
         return None
     else:
-        print("The following job(s) were found:")
+        pass
+        #print("The following job(s) were found:")
 
     for job in content["data"]:
-        print("-----------------------------------------------")
-        print("\n".join([job["job_title"], job["company"], job["location"]]))
+        #print("-----------------------------------------------")
+        #print("\n".join([job["job_title"], job["company"], job["location"]]))
         
         #VALUES = "({id}, '{job_title}', '{url}', '{date_posted}', {has_blurred_data}, '{company}', '{final_url}', '{source_url}', '{location}', {remote}, {hybrid}, '{salary_string}', '{seniority}', '{company_domain}', {reposted}, '{date_reposted}', {technology_slugs}, '{description}')".format(id=job["id"], job_title=job["job_title"], url=job["url"], date_posted=job["date_posted"], has_blurred_data=job["has_blurred_data"], company=job["company"], final_url=job["final_url"], source_url=job["source_url"], location=job["source_url"], remote=job["remote"], hybrid=job["hybrid"], salary_string=job["salary_string"], seniority=job["seniority"], company_domain=job["company_domain"], reposted=job["reposted"], date_reposted=job["date_reposted"], technology_slugs=f"{job["technology_slugs"]}", description=job["description"])
 
         # Insert job in database
-        if not masked_data:
+        if save_locally:
             conn = sqlite3.connect("db.sqlite", isolation_level=None)
             conn.execute("INSERT INTO jobs (id, id_theirstack, job_title, url, date_posted, has_blurred_data, company, final_url, source_url, location, remote, hybrid, salary_string, seniority, company_domain, reposted, date_reposted, employment_statuses, technology_slugs, description) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);",
                         (uuid.uuid4().__str__(),

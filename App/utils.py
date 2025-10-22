@@ -75,7 +75,7 @@ def build_db(db="db.sqlite"):
                     technology_slugs text,
                     description text,
 
-                    relevance_score integer,
+                    relevance text default '---',
                     status text default '---',
                     comment text default ''
                 );

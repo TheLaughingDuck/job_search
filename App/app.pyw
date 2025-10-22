@@ -77,7 +77,7 @@ class JobAppGUI:
         self.tree.pack(fill="both", expand=True, padx=10, pady=5)
 
         # Query TheirStack for job listings
-        get_jobs(masked_data=False)
+        get_jobs(masked_data=True)
 
         self.refresh_jobs()
 
@@ -167,16 +167,30 @@ class JobAppGUI:
         jobtitle_var = tk.StringVar()
         company_var = tk.StringVar()
         url_var = tk.StringVar()
+        dateposted_var = tk.StringVar()
+        location_var = tk.StringVar()
+        remote_var = tk.BooleanVar()
+        hybrid_var = tk.BooleanVar()
+        salarystring_var = tk.StringVar()
+        seniority_var = tk.StringVar()
+        relevance_var = tk.StringVar()
         comment_var = tk.StringVar()
         status_var = tk.StringVar()
 
         if job_id:
             c = self.conn.cursor()
-            c.execute("SELECT job_title, company, url, comment, status FROM jobs WHERE id=?", (job_id,))
-            jobtitle, company, url, comment, status = c.fetchone()
+            c.execute("SELECT job_title, company, url, date_posted, location, remote, hybrid, salary_string, seniority, relevance, comment, status FROM jobs WHERE id=?", (job_id,))
+            jobtitle, company, url, dateposted, location, remote, hybrid, salarystring, seniority, relevance, comment, status = c.fetchone()
             jobtitle_var.set(jobtitle)
             company_var.set(company)
             url_var.set(url)
+            dateposted_var.set(dateposted)
+            location_var.set(location)
+            remote_var.set(remote)
+            hybrid_var.set(hybrid)
+            salarystring_var.set(salarystring)
+            seniority_var.set(seniority)
+            relevance_var.set(relevance)
             comment_var.set(comment)
             status_var.set(status)
         else:
@@ -192,27 +206,47 @@ class JobAppGUI:
         tk.Label(win, text="URL").grid(row=2, column=0, padx=5, pady=5)
         tk.Entry(win, textvariable=url_var, width=40).grid(row=2, column=1, padx=5, pady=5)
 
-        tk.Label(win, text="Status").grid(row=3, column=0, padx=5, pady=5)
-        status_menu = tk.OptionMenu(win, status_var, '---', 'Applied', 'Rejected', 'I lack requirements', 'Closed')
-        status_menu.grid(row=3, column=1, padx=5, pady=5)        
+        tk.Label(win, text="Date posted").grid(row=3, column=0, padx=5, pady=5)
+        tk.Entry(win, textvariable=dateposted_var, width=40).grid(row=3, column=1, padx=5, pady=5)
 
-        tk.Label(win, text="comment").grid(row=4, column=0, padx=5, pady=5)
-        tk.Entry(win, textvariable=comment_var, width=40).grid(row=4, column=1, padx=5, pady=5)
+        tk.Label(win, text="Location").grid(row=4, column=0, padx=5, pady=5)
+        tk.Entry(win, textvariable=location_var, width=40).grid(row=4, column=1, padx=5, pady=5)
+
+        tk.Checkbutton(win, text="Remote", variable=remote_var, onvalue=1, offvalue=0).grid(row=5, column=1)
+
+        tk.Checkbutton(win, text="Hybrid", variable=hybrid_var, onvalue=1, offvalue=0).grid(row=6, column=1)
+
+        tk.Label(win, text="Salary").grid(row=7, column=0, padx=5, pady=5)
+        tk.Entry(win, textvariable=salarystring_var, width=40).grid(row=7, column=1, padx=5, pady=5)
+
+        tk.Label(win, text="Seniority").grid(row=8, column=0, padx=5, pady=5)
+        tk.Entry(win, textvariable=seniority_var, width=40).grid(row=8, column=1, padx=5, pady=5)
+
+        tk.Label(win, text="Relevance").grid(row=9, column=0, padx=5, pady=5)
+        relevance_menu = tk.OptionMenu(win, relevance_var, '---', 'Perfect', 'Relevant', 'Vaguely relevant', 'Irrelevant')
+        relevance_menu.grid(row=9, column=1, padx=5, pady=5)
+
+        tk.Label(win, text="Status").grid(row=10, column=0, padx=5, pady=5)
+        status_menu = tk.OptionMenu(win, status_var, '---', 'Applied', 'Rejected', 'I lack requirements', 'Closed')
+        status_menu.grid(row=10, column=1, padx=5, pady=5)        
+
+        tk.Label(win, text="Your personal comments").grid(row=11, column=0, padx=5, pady=5)
+        tk.Entry(win, textvariable=comment_var, width=40).grid(row=11, column=1, padx=5, pady=5)
 
         def save(job_id=job_id):
             c = self.conn.cursor()
             if job_id:
-                c.execute("UPDATE jobs SET job_title=?, company=?, url=?, comment=?, status=? WHERE id=?",
-                          (jobtitle_var.get(), company_var.get(), url_var.get(), comment_var.get(), status_var.get(), job_id))
+                c.execute("UPDATE jobs SET job_title=?, company=?, url=?, date_posted=?, location=?, remote=?, hybrid=?, salary_string=?, seniority=?, relevance=?, comment=?, status=? WHERE id=?",
+                          (jobtitle_var.get(), company_var.get(), url_var.get(), dateposted_var.get(), location_var.get(), remote_var.get(), hybrid_var.get(), salarystring_var.get(), seniority_var.get(), relevance_var.get(), comment_var.get(), status_var.get(), job_id))
             else:
                 job_id = uuid.uuid4().__str__()
-                c.execute("INSERT INTO jobs (id, job_title, company, url, comment, status) VALUES (?, ?, ?, ?, ?, ?)",
-                          (job_id, jobtitle_var.get(), company_var.get(), url_var.get(), comment_var.get(), status_var.get()))
+                c.execute("INSERT INTO jobs (id, job_title, company, url, date_posted, location, remote, hybrid, salary_string, seniority, relevance, comment, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                          (job_id, jobtitle_var.get(), company_var.get(), url_var.get(), dateposted_var.get(), location_var.get(), remote_var.get(), hybrid_var.get(), salarystring_var.get(), seniority_var.get(), relevance_var.get(), comment_var.get(), status_var.get()))
             self.conn.commit()
             self.refresh_jobs()
             win.destroy()
 
-        tk.Button(win, text="Save", font=("Courier", 20), width=10, command=save).grid(row=5, column=0, columnspan=2, pady=10)
+        tk.Button(win, text="Save", font=("Courier", 20), width=10, command=save).grid(row=12, column=0, columnspan=2, pady=10)
     
     def settings_window(self):
         win = tk.Toplevel(self.root)

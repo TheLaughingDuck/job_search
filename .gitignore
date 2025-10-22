@@ -1,2 +1,21 @@
 .env
 job_search_database.sqlite
+
+__pycache__
+
+App/dist/
+App/build/
+App/app.spec
+
+# Local working files
+development/
+deprecated/
+venv
+
+# Local data
+db_dev.sqlite
+db.sqlite
+job_search_database.sqlite
+keys.json
+LOG.log
+todo.md

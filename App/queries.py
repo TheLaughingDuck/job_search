@@ -140,36 +140,3 @@ def get_jobs(limit=5, masked_data=True):
 
     get_token_usage()
 
-
-def destroy_database():
-    '''Drop the jobs table. VERY BAD! BE CAREFUL!'''
-
-    print("You are about to DROP the jobs table. THIS IS DANGEROUS!")
-    print("It might contain important data, so please be careful!")
-    responses = []
-    
-    while True:
-        inp = input("Are you sure? [Y/n]>")
-
-        if inp == "Y": responses += "Y"
-        elif inp == "n":
-            print("Destruction aborted")
-            break
-
-        if responses == ["Y", "Y", "Y", "Y"]:
-            print("Ok, you seem really really sure. Let's drop the jobs table.")
-
-            conn = sqlite3.connect("job_search_database.sqlite", isolation_level=None)
-            conn.execute("DROP TABLE IF EXISTS jobs;")
-
-            break
-
-def build_database():
-    '''For building the database, particularly the jobs table.'''
-
-    conn = sqlite3.connect("job_search_database.sqlite", isolation_level=None)
-    with open("build_database.sql", "r") as f:
-        sql_script = f.read()
-        for statement in sql_script.split(";"):
-            conn.execute(statement)
-# %%

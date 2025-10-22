@@ -183,9 +183,10 @@ class JobAppGUI:
         try:
             if (usage[0] != "-") and (usage[0] >= usage[1]):
                 logging.info("Attempted job request, but user is out of API tokens.")
-                self.error_window("You can't request more jobs, because you are out of API tokens this month.")
+                messagebox.showinfo(title="Error", message="You can't request more jobs, because you are out of API tokens this month.")
         except Exception as e:
             logging.warning(f"Unexpected error: {e}")
+            messagebox.showwarning(title="Error", message=e)
 
 
     ###### ^ ###### TOP BUTTONS ###### ^ ######
@@ -332,20 +333,20 @@ class JobAppGUI:
                 win.destroy()
             except Exception as e:
                 logging.info(e)
-                self.error_window(e)
+                messagebox.showerror(title="Error", message=e)
 
         tk.Button(win, text="Save", font=("Courier", 20), width=10, command=save).grid(row=30, column=0, columnspan=2, pady=10)
 
 
 
-    def error_window(self, message="..."):
-        win = tk.Toplevel(self.root)
-        win.title("ERROR")
+    # def error_window(self, message="..."):
+    #     win = tk.Toplevel(self.root)
+    #     win.title("ERROR")
 
-        message = "An error occurred, outputting the following error message:\n\n" + str(message) + "\n\nSee the log file for further details."
+    #     message = "An error occurred, outputting the following error message:\n\n" + str(message) + "\n\nSee the log file for further details."
 
-        tk.Label(win, text=message).pack(side="top")
-        tk.Button(win, text="OK", font=("Courier", 8), width=5, command=win.destroy).pack(side="bottom", pady=10)
+    #     tk.Label(win, text=message).pack(side="top")
+    #     tk.Button(win, text="OK", font=("Courier", 8), width=5, command=win.destroy).pack(side="bottom", pady=10)
     
     def update_token_usage_label(self):
         '''Updates the token usage label, and returns the number of used and total tokens'''

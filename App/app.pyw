@@ -3,6 +3,7 @@ from tkinter import ttk, messagebox
 import sqlite3
 from queries import get_jobs, get_token_usage
 from utils import run_sql, build_db, json_get_key, json_set_key, create_keys_file
+import uuid
 
 import logging
 logging.basicConfig(filename="LOG.log",
@@ -204,6 +205,7 @@ class JobAppGUI:
                 c.execute("UPDATE jobs SET job_title=?, company=?, url=?, comment=?, status=? WHERE id=?",
                           (jobtitle_var.get(), company_var.get(), url_var.get(), comment_var.get(), status_var.get(), job_id))
             else:
+                job_id = uuid.uuid4().__str__()
                 c.execute("INSERT INTO jobs (id, job_title, company, url, comment, status) VALUES (?, ?, ?, ?, ?, ?)",
                           (job_id, jobtitle_var.get(), company_var.get(), url_var.get(), comment_var.get(), status_var.get()))
             self.conn.commit()

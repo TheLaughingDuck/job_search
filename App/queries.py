@@ -3,6 +3,7 @@ import requests
 import json
 import os
 import sqlite3
+import uuid
 
 from utils import json_get_key
 
@@ -55,7 +56,7 @@ def get_jobs(limit=5, masked_data=True):
 
     # Retrieve saved job id's, so that they can be excluded from the job query below.
     conn = sqlite3.connect("db.sqlite", isolation_level=None)
-    job_ids = [i[0] for i in conn.execute("SELECT id from jobs;").fetchall()]
+    job_ids = [i[0] for i in conn.execute("SELECT id_theirstack from jobs;").fetchall()]
 
     # Get locations for processing below
     locations = json_get_key("keys.json", "locations")
@@ -117,8 +118,9 @@ def get_jobs(limit=5, masked_data=True):
         # Insert job in database
         if not masked_data:
             conn = sqlite3.connect("db.sqlite", isolation_level=None)
-            conn.execute("INSERT INTO jobs (id, job_title, url, date_posted, has_blurred_data, company, final_url, source_url, location, remote, hybrid, salary_string, seniority, company_domain, reposted, date_reposted, employment_statuses, technology_slugs, description) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);",
-                        (job["id"],
+            conn.execute("INSERT INTO jobs (id, id_theirstack, job_title, url, date_posted, has_blurred_data, company, final_url, source_url, location, remote, hybrid, salary_string, seniority, company_domain, reposted, date_reposted, employment_statuses, technology_slugs, description) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);",
+                        (uuid.uuid4().__str__(),
+                        job["id"],
                         job["job_title"],
                         job["url"],
                         job["date_posted"],

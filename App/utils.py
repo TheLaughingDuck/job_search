@@ -54,7 +54,8 @@ def build_db(db="db.sqlite"):
         with sqlite3.connect(db) as conn:
             conn.execute('''
                 CREATE TABLE IF NOT EXISTS jobs (
-                    id integer PRIMARY KEY,
+                    id text PRIMARY KEY,
+                    id_theirstack integer DEFAULT NULL,
                     job_title text,
                     url text,
                     date_posted text,

@@ -140,6 +140,7 @@ def create_keys_file(fp="keys.json"):
             "job_title_not": [
                 "Senior"
             ],
+            "limit": 5,
             "locations": {
                 "Stockholm": [0, {'id': '2673730'}],
                 "Stockholms Lan": [0, {'id': '2673722'}],

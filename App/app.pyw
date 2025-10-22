@@ -258,6 +258,12 @@ class JobAppGUI:
         tk.Label(win, text="TheirStack API token\n(without any surrounding quotation marks)").grid(row=0, column=0, padx=5, pady=5)
         tk.Entry(win, textvariable=theirstack_token_var, width=40).grid(row=0, column=1, padx=5, pady=5)
 
+        # Jobs per request
+        requestlimit_var = tk.IntVar()
+        requestlimit_var.set(json_get_key("keys.json", "limit"))
+        tk.Label(win, text="Max number of jobs per request\n(Keep low (5) to avoid using up API tokens quickly)").grid(row=1, column=0, padx=5, pady=5)
+        tk.Entry(win, textvariable=requestlimit_var, width=40).grid(row=1, column=1, padx=5, pady=5)
+
         # Relevant job titles
         job_title_or = tk.StringVar()
         job_title_or.set(",".join(json_get_key("keys.json", "job_title_or")))
@@ -284,6 +290,7 @@ class JobAppGUI:
                 json_set_key(fp="keys.json", key="THEIRSTACK_TOKEN", val=theirstack_token_var.get())
                 json_set_key(fp="keys.json", key="job_title_or", val=job_title_or.get().split(","))
                 json_set_key(fp="keys.json", key="job_title_not", val=job_title_not.get().split(","))
+                json_set_key(fp="keys.json", key="limit", val=requestlimit_var.get())
 
                 # Update locations in keys.json
                 for key in loc_keys:

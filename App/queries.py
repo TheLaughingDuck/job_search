@@ -23,15 +23,14 @@ def get_token_usage():
     TOKEN = json_get_key("keys.json", "THEIRSTACK_TOKEN") #os.getenv("THEIR_STACK_TOKEN")
 
     try:
-        res = requests.get("https://api.theirstack.com/v0/users/me",
+        res = requests.get("https://api.theirstack.com/v0/billing/credit-balance",
             headers={'Authorization': f"Bearer {TOKEN}"})
     except Exception as e:
         logging.info(e)
     
     if res.status_code == 200:
         content = json.loads(res.content)
-        #print(f"\nAPI credits used: {content["team"]["api_credits_used_current_period"]}/{content["team"]["api_credits"]}")
-        return (content["team"]["api_credits_used_current_period"], content["team"]["api_credits"])
+        return (content["used_api_credits"], content["api_credits"])
     else:
         if res.status_code == 402: logging.info("TheirStack gave status code 402: Payment Required (you probably exceeded the API limit this month).")
         elif res.status_code == 401: logging.info("TheirStack gave status code 401: Invalid authentication credentials.")

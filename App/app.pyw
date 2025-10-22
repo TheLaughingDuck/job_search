@@ -77,7 +77,7 @@ class JobAppGUI:
         self.tree.pack(fill="both", expand=True, padx=10, pady=5)
 
         # Query TheirStack for job listings
-        get_jobs(masked_data=True)
+        get_jobs(masked_data=False)
 
         self.refresh_jobs()
 
@@ -129,8 +129,8 @@ class JobAppGUI:
         self.retrieved_jobs_label.update()
 
         # Update label with token usage
-        #self.api_token_label.configure(text="Used {} out of {} tokens".format(*get_token_usage()))
-        #self.api_token_label.update()
+        self.api_token_label.configure(text="Used {} out of {} tokens".format(*get_token_usage()))
+        self.api_token_label.update()
     
     def enter_key_pressed(self, event):
         '''Refresh the UI table when 'Return' is pressed.'''

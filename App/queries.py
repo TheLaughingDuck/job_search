@@ -102,8 +102,9 @@ def get_jobs(limit=5, masked_data=True):
     
     # Present the retrieved jobs, and save them to the database file.
     content = json.loads(res.content)
+    logging.info(f"Received content:\n\n{content}\n\n")
     if len(content["data"]) == 0:
-        print("No jobs were found.")
+        logging.info("No jobs were found.")
         #get_token_usage()
         return None
     else:

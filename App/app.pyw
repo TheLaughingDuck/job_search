@@ -40,9 +40,9 @@ class JobAppGUI:
         tk.Button(top_frame, text="Add Job", command=self.add_job).pack(side="left", padx=5)
         tk.Button(top_frame, text="Edit Job", command=self.edit_job).pack(side="left", padx=5)
         tk.Button(top_frame, text="Show Description", command=self.show_description).pack(side="left", padx=5)
+        tk.Button(top_frame, text="Delete Job", command=self.delete_job).pack(side="left", padx=5)
         tk.Button(top_frame, text="Settings", command=self.settings_window).pack(side="left", padx=5)
         tk.Button(top_frame, text="Find job listings", command=self.find_jobs).pack(side="left", padx=5)
-        #tk.Button(top_frame, text="Delete Job", command=self.delete_job).pack(side="left", padx=5)
 
         # --- Filter / Sort ---
         filter_frame = tk.Frame(root)
@@ -155,6 +155,23 @@ class JobAppGUI:
             messagebox.showwarning("Select Job", "Please select a job.")
             return
         self.description_window(job_id=selected)
+    
+    def delete_job(self):
+        job_id = self.tree.focus()
+        if not job_id:
+            messagebox.showwarning("Select Job", "Please select a job to delete.")
+            return
+        
+        # Prompt the user to confirm delete
+        response = messagebox.askyesno(title="Delete job", message="You are about to delete this job, are you sure?")
+        if response:
+            c = self.conn.cursor()
+            c.execute(f"DELETE FROM jobs WHERE id='{job_id}';")
+            self.conn.commit()
+            
+            self.refresh_jobs()
+        else: return
+
     
     def find_jobs(self):
         '''Request jobs from TheirStack and update app.'''

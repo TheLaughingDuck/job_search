@@ -41,6 +41,7 @@ class JobAppGUI:
         tk.Button(top_frame, text="Edit Job", command=self.edit_job).pack(side="left", padx=5)
         tk.Button(top_frame, text="Show Description", command=self.show_description).pack(side="left", padx=5)
         tk.Button(top_frame, text="Settings", command=self.settings_window).pack(side="left", padx=5)
+        tk.Button(top_frame, text="Find job listings", command=self.find_jobs).pack(side="left", padx=5)
         #tk.Button(top_frame, text="Delete Job", command=self.delete_job).pack(side="left", padx=5)
 
         # --- Filter / Sort ---
@@ -76,9 +77,7 @@ class JobAppGUI:
         self.tree.heading("comment", text="Comment", command=lambda: self.refresh_jobs("comment"))
         self.tree.pack(fill="both", expand=True, padx=10, pady=5)
 
-        # Query TheirStack for job listings
-        get_jobs(masked_data=False)
-
+        # Refresh the list of jobs (from the local database)
         self.refresh_jobs()
 
     def refresh_jobs(self, sort_by=None):
@@ -128,9 +127,9 @@ class JobAppGUI:
         self.retrieved_jobs_label.configure(text="Showing {n_jobs} jobs".format(n_jobs=self.retrieved_jobs))
         self.retrieved_jobs_label.update()
 
-        # Update label with token usage
-        self.api_token_label.configure(text="Used {} out of {} tokens".format(*get_token_usage()))
-        self.api_token_label.update()
+        # Update the label that shows how many tokens have been used
+        # No immediate need to this when just updating the shown list. Remove.
+        #self.update_token_usage_label()
     
     def enter_key_pressed(self, event):
         '''Refresh the UI table when 'Return' is pressed.'''
@@ -156,6 +155,21 @@ class JobAppGUI:
             messagebox.showwarning("Select Job", "Please select a job.")
             return
         self.description_window(job_id=selected)
+    
+    def find_jobs(self):
+        '''Request jobs from TheirStack and update app.'''
+        get_jobs(masked_data=False)
+        self.refresh_jobs()
+
+        # Check current token usage
+        usage = self.update_token_usage_label()
+        try:
+            if (usage[0] != "-") and (usage[0] >= usage[1]):
+                logging.info("Attempted job request, but user is out of API tokens.")
+                self.error_window("You can't request more jobs, because you are out of API tokens this month.")
+        except Exception as e:
+            logging.warning(f"Unexpected error: {e}")
+
 
     ###### ^ ###### TOP BUTTONS ###### ^ ######
 
@@ -315,6 +329,14 @@ class JobAppGUI:
 
         tk.Label(win, text=message).pack(side="top")
         tk.Button(win, text="OK", font=("Courier", 8), width=5, command=win.destroy).pack(side="bottom", pady=10)
+    
+    def update_token_usage_label(self):
+        '''Updates the token usage label, and returns the number of used and total tokens'''
+        usage = get_token_usage()
+        self.api_token_label.configure(text="Used {} out of {} tokens".format(usage[0], usage[1]))
+        self.api_token_label.update()
+
+        return usage
 
         
     

@@ -1,7 +1,7 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
 import sqlite3
-from queries import get_jobs, get_token_usage
+from queries import get_jobs, get_token_usage, get_locations
 from utils import run_sql, build_db, json_get_key, json_set_key, create_keys_file
 import uuid
 
@@ -286,37 +286,61 @@ class JobAppGUI:
         win = tk.Toplevel(self.root)
         win.title("Settings")
 
+        top_frame = tk.Frame(win)
+        top_frame.pack(fill="x", padx=10, pady=5)
+        #tk.Label(top_frame, text="Configure Query Settings", font=("Courier", 20)).pack(side="top", padx=5)
+
         # TheirStack API token
         theirstack_token_var = tk.StringVar()
         theirstack_token_var.set(json_get_key("keys.json", "THEIRSTACK_TOKEN"))
-        tk.Label(win, text="TheirStack API token\n(without any surrounding quotation marks)").grid(row=0, column=0, padx=5, pady=5)
-        tk.Entry(win, textvariable=theirstack_token_var, width=40).grid(row=0, column=1, padx=5, pady=5)
+        tk.Label(top_frame, text="TheirStack API token\n(without any surrounding quotation marks)").grid(row=0, column=0, padx=5, pady=5)
+        tk.Entry(top_frame, textvariable=theirstack_token_var, width=40).grid(row=0, column=1, padx=5, pady=5)
 
         # Jobs per request
         requestlimit_var = tk.IntVar()
         requestlimit_var.set(json_get_key("keys.json", "limit"))
-        tk.Label(win, text="Max number of jobs per request\n(Keep low (5) to avoid using up API tokens quickly)").grid(row=1, column=0, padx=5, pady=5)
-        tk.Entry(win, textvariable=requestlimit_var, width=40).grid(row=1, column=1, padx=5, pady=5)
+        tk.Label(top_frame, text="Max number of jobs per request\n(Keep low (5) to avoid using up API tokens quickly)").grid(row=1, column=0, padx=5, pady=5)
+        tk.Entry(top_frame, textvariable=requestlimit_var, width=40).grid(row=1, column=1, padx=5, pady=5)
 
         # Relevant job titles
         job_title_or = tk.StringVar()
         job_title_or.set(",".join(json_get_key("keys.json", "job_title_or")))
-        tk.Label(win, text="Job titles\n(separate multiple with commas, no space)").grid(row=2, column=0, padx=5, pady=5)
-        tk.Entry(win, textvariable=job_title_or, width=40).grid(row=2, column=1, padx=5, pady=5)
+        tk.Label(top_frame, text="Job titles\n(separate multiple with commas, no space)").grid(row=2, column=0, padx=5, pady=5)
+        tk.Entry(top_frame, textvariable=job_title_or, width=40).grid(row=2, column=1, padx=5, pady=5)
 
         # Filter out jobs with
         job_title_not = tk.StringVar()
         job_title_not.set(",".join(json_get_key("keys.json", "job_title_not")))
-        tk.Label(win, text="Exclude job titles or seniority\n(e.g. 'Senior', separate multiple with commas, no space)").grid(row=3, column=0, padx=5, pady=5)
-        tk.Entry(win, textvariable=job_title_not, width=40).grid(row=3, column=1, padx=5, pady=5)
+        tk.Label(top_frame, text="Exclude job titles or seniority\n(e.g. 'Senior', separate multiple with commas, no space)").grid(row=3, column=0, padx=5, pady=5)
+        tk.Entry(top_frame, textvariable=job_title_not, width=40).grid(row=3, column=1, padx=5, pady=5)
 
-        # Location checkboxes
-        locations = json_get_key("keys.json", "locations")
-        loc_keys = list(locations.keys())
-        loc_vars = {key: tk.IntVar(value=locations[key][0]) for key in loc_keys}
-        tk.Label(win, text="Select locations you are interested in.").grid(row=4, column=0)
-        for i, key in zip(range(0, len(loc_keys)), loc_keys):
-            tk.Checkbutton(win, text=key, variable=loc_vars[key], onvalue=1, offvalue=0).grid(row=5+i, column=0)
+        # # Location checkboxes
+        # locations = json_get_key("keys.json", "locations")
+        # loc_keys = list(locations.keys())
+        # loc_vars = {key: tk.IntVar(value=locations[key][0]) for key in loc_keys}
+        # tk.Label(win, text="Select locations you are interested in.").grid(row=4, column=0)
+        # for i, key in zip(range(0, len(loc_keys)), loc_keys):
+        #     tk.Checkbutton(win, text=key, variable=loc_vars[key], onvalue=1, offvalue=0).grid(row=5+i, column=0)
+        
+        bottom_frame = tk.Frame(win)
+        bottom_frame.pack(fill="x", padx=10, pady=5)
+        tk.Label(bottom_frame, text="Configure Location", font=("Courier", 20)).pack(side="top", padx=5)
+        
+        tk.Label(bottom_frame, text="Filter:").pack(side="left", padx=5)
+        self.location_filter_var = tk.StringVar()
+        tk.Entry(bottom_frame, textvariable=self.location_filter_var).pack(side="left", padx=5)
+        tk.Button(bottom_frame, text="Search", command=self.refresh_locations).pack(side="left", padx=5)
+        tk.Button(bottom_frame, text="Toggle", command=self.update_location_selection).pack(side="left", padx=5)
+        
+        self.tree_locs = ttk.Treeview(win, columns=("name", "country", "is_selected"), show="headings")
+        self.tree_locs.heading("name", text="Name", command=lambda: self.refresh_jobs("job_title"))
+        self.tree_locs.heading("country", text="Country", command=lambda: self.refresh_jobs("job_title"))
+        self.tree_locs.heading("is_selected", text="Selected", command=lambda: self.refresh_jobs("job_title"))
+        self.tree_locs.pack(padx=5)
+
+        # Retrieve and show the currently saved locations
+        self.locations = [] # Instantiate the locations as empty (and then load the saved ones from keys.json in self.refresh_locations()).
+        self.refresh_locations(search=False)
 
         # Saving settings
         def save():
@@ -326,10 +350,12 @@ class JobAppGUI:
                 json_set_key(fp="keys.json", key="job_title_not", val=job_title_not.get().split(","))
                 json_set_key(fp="keys.json", key="limit", val=requestlimit_var.get())
 
-                # Update locations in keys.json
-                for key in loc_keys:
-                    locations[key] = [loc_vars[key].get(), locations[key][1]]
-                json_set_key(fp="keys.json", key="locations", val=locations)
+                # # Update locations in keys.json
+                # for key in loc_keys:
+                #     locations[key] = [loc_vars[key].get(), locations[key][1]]
+                # json_set_key(fp="keys.json", key="locations", val=locations)
+                #print("\nAbout to save locations from:\n\t", "\n\t".join([i["name"]+"     "+i["selected"] for i in self.locations]))
+                json_set_key(fp="keys.json", key="locations_v2", val=[dic for dic in self.locations if dic['selected'] == "Yes"])
 
                 # Destroy the window
                 win.destroy()
@@ -337,7 +363,7 @@ class JobAppGUI:
                 logging.info(e)
                 messagebox.showerror(title="Error", message=e)
 
-        tk.Button(win, text="Save", font=("Courier", 20), width=10, command=save).grid(row=30, column=0, columnspan=2, pady=10)
+        tk.Button(bottom_frame, text="Save settings", font=("Courier", 20), width=20, command=save).pack(side="bottom", pady=10)#.grid(row=30, column=0, columnspan=2, pady=10)
 
 
 
@@ -383,6 +409,62 @@ class JobAppGUI:
         scroll.pack(side="right", fill="y")
 
 
+    def update_location_selection(self):
+        '''
+        Toggle the selection status of the selected jobs when user presses the toggle button.
+        '''
+
+        #print("\nself.locations prior to update:\n\t", "\n\t".join([i["name"]+"     "+i["selected"] for i in self.locations]))
+        for element in self.locations:
+            # Check if this location element is among the selected
+            if element['id'] in [int(i) for i in self.tree_locs.selection()]:
+
+                # Toggle the "selected" value, and update the tree
+                element['selected'] = "Yes" if element['selected'] == "No" else "No"
+                self.tree_locs.item(element['id'], values=(element['name'], element['country_name'], element['selected']))
+        
+        #print("\nself.locations after update:\n\t", "\n\t".join([i["name"]+"     "+i["selected"] for i in self.locations]))
+    
+    def refresh_locations(self, search=True):
+        '''
+        Search for locatons related to the search_term.
+
+        Whether to search is toggle-able, so that the already saved locations can be shown without
+        having to make a new empty search every time the settings window opens.
+        '''
+        # Clear unselected locations from the current tree
+        # Remove all instead. The ones with "Yes" should still be in self.locations
+        for id in self.tree_locs.get_children(): self.tree_locs.delete(id)
+        # for id in self.tree_locs.get_children():
+        #     if self.tree_locs.item(id)["values"][2] == "No": self.tree_locs.delete(id)
+        
+        # Also clear the locations that are *not* selected
+        self.locations = list(filter(lambda x: x["selected"] == "Yes", self.locations))
+        
+        # Retrieve new locations based on the search term
+        if search:
+            #print("\n\nSEARCHING FOR NEW LOCATIONS\n\n")
+            searched_locations = get_locations(search_term=self.location_filter_var.get())
+        else: searched_locations = []
+
+        # Retrieve previously saved locations from keys.json
+        saved_locations = json_get_key("keys.json", "locations_v2")
+        
+        # Iterate through the saved and searched locations, and append the ones that
+        # are not already in self.locations (the "working memory" while the app is running)
+        for element in saved_locations + searched_locations:
+            #print(self.locations)
+            if element['id'] not in [elem['id'] for elem in self.locations]:
+                element['selected'] = element['selected'] #'No'
+                self.locations += [{'id': element['id'], 'name': element['name'], 'country_name': element['country_name'], 'selected': element['selected']}] #[element]  
+
+        #shown_locations = get_locations(search_term=self.location_filter_var.get())
+        #shown_locations = [{'id': 123, "name":"A", "country_name": "ASD"}, {'id': 456, "name":"B", "country_name": "BNM"}]
+        #print(f"\nAll of it: {self.locations}")
+
+        # Insert the relevant locations into the tree
+        for row in self.locations:
+            self.tree_locs.insert("", "end", iid=row['id'], values=[row['name'], row['country_name'], row['selected']])
 
 
 if __name__ == "__main__":

@@ -59,11 +59,11 @@ def get_jobs(limit=2, masked_data=True, save_locally=True):
     job_ids = [i[0] for i in conn.execute("SELECT id_theirstack from jobs;").fetchall()]
 
     # Get locations for processing below
-    locations = json_get_key("keys.json", "locations")
+    locations = json_get_key("keys.json", "locations_v2")
 
     PAYLOAD = {
         'page': 0,
-        'limit': limit,
+        'limit': json_get_key("keys.json", "limit"), #limit,
         'job_country_code_or': ['SE'],
         'posted_at_max_age_days': 30,
         'blur_company_data': masked_data, # set to false in order to get full information (when enabled it does not consume API token)
@@ -71,7 +71,8 @@ def get_jobs(limit=2, masked_data=True, save_locally=True):
         'job_title_not': json_get_key("keys.json", "job_title_not"), #['Senior'],
         #'job_seniority_or': ['junior'],
         'job_id_not': job_ids,
-        'job_location_or': [locations[key][1] for key in locations if locations[key][0] == 1]
+        'job_location_or': [{'id': str(i["id"])} for i in locations if i["selected"] == "Yes"],
+        #'job_location_or': [locations[key][1] for key in locations if locations[key][0] == 1]
         # 'job_location_or': [{'id': '2673722'}, {'id': '2673730'}, {'id': '2673723'},
         #                     {'id': '2694759'}, {'id': '2694762'}, {'id': '2688367'}, {'id': '2688368'}]
     }
@@ -149,3 +150,41 @@ def get_jobs(limit=2, masked_data=True, save_locally=True):
 
     #get_token_usage()
 
+
+def get_locations(search_term:str):
+    '''
+    Retrieve locations associated with the search term.
+    '''
+
+    HEADERS = {
+        'Authorization': f"Bearer {json_get_key("keys.json", "THEIRSTACK_TOKEN")}"
+    }
+    
+    logging.info(f"Attempting location search with search term:{search_term}")
+
+    try:
+        res = requests.get(f"https://api.theirstack.com/v0/catalog/locations?name={search_term}",
+                           headers=HEADERS)
+    except Exception as e:
+        logging.info(e)
+    
+    if res.status_code != 200:
+        if res.status_code == 401: logging.info("TheirStack gave status code 401: Invalid authentication credentials.")
+        elif res.status_code == 402: logging.info("TheirStack gave status code 402: Payment Required (you probably exceeded the API limit this month).")
+        elif res.status_code == 404: logging.info("TheirStack gave status code 404: Not Found.")
+        elif res.status_code == 405: logging.info("TheirStack gave status code 405: Method not allowed (you probably used some outdated endpoint).")
+        elif res.status_code == 422: logging.info("TheirStack gave status code 422: Unprocessable Entity")
+        else: logging.warning(f"TheirStack gave unknown status code {res.status_code}")
+        
+        # Shut down
+        #get_token_usage()
+        return None
+    elif res.status_code == 200: pass
+
+    data = json.loads(res.content)
+
+    # Insert the "selected" key-value pair, with default value "No", as these locations have just been retrieved from the search query
+    for element in data:
+        element["selected"] = "No"
+
+    return data

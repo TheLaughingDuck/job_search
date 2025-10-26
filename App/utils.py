@@ -150,7 +150,8 @@ def create_keys_file(fp="keys.json"):
                 "Linkopings Kommun": [0, {'id': '2694759'}],
                 "Norrkoping": [0, {'id': '2688368'}],
                 "Norrkopings Kommun": [0, {'id': '2688367'}]
-            }
+            },
+            "locations_v2": []
         }
 
         # Save the keys file

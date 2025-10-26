@@ -28,17 +28,12 @@ def get_token_usage():
     except Exception as e:
         logging.info(e)
     
+    # Process status code
     if res.status_code == 200:
         content = json.loads(res.content)
         return (content["used_api_credits"], content["api_credits"])
     else:
-        if res.status_code == 401: logging.info("TheirStack gave status code 401: Invalid authentication credentials.")
-        elif res.status_code == 402: logging.info("TheirStack gave status code 402: Payment Required (you probably exceeded the API limit this month).")
-        elif res.status_code == 404: logging.info("TheirStack gave status code 404: Not Found.")
-        elif res.status_code == 405: logging.info("TheirStack gave status code 405: Method not allowed (you probably used some outdated endpoint).")
-        elif res.status_code == 422: logging.info("TheirStack gave status code 422: Unprocessable Entity")
-        else: logging.warning(f"TheirStack gave unknown status code {res.status_code}")
-
+        process_status_code(res.status_code)
         return ("-","-")
     
     
@@ -87,21 +82,11 @@ def get_jobs(limit=2, masked_data=True, save_locally=True):
     except Exception as e:
         logging.info(e)
     
-    # Log the status code
-    
+    # Process status code
     if res.status_code != 200:
-        if res.status_code == 401: logging.info("TheirStack gave status code 401: Invalid authentication credentials.")
-        elif res.status_code == 402: logging.info("TheirStack gave status code 402: Payment Required (you probably exceeded the API limit this month).")
-        elif res.status_code == 404: logging.info("TheirStack gave status code 404: Not Found.")
-        elif res.status_code == 405: logging.info("TheirStack gave status code 405: Method not allowed (you probably used some outdated endpoint).")
-        elif res.status_code == 422: logging.info("TheirStack gave status code 422: Unprocessable Entity")
-        else: logging.warning(f"TheirStack gave unknown status code {res.status_code}")
-        
-        # Shut down
-        #get_token_usage()
+        process_status_code(res.status_code)
         return None
-    elif res.status_code == 200: pass
-
+    else: pass
     
     # Present the retrieved jobs, and save them to the database file.
     content = json.loads(res.content)
@@ -168,18 +153,11 @@ def get_locations(search_term:str):
     except Exception as e:
         logging.info(e)
     
+    # Process status code
     if res.status_code != 200:
-        if res.status_code == 401: logging.info("TheirStack gave status code 401: Invalid authentication credentials.")
-        elif res.status_code == 402: logging.info("TheirStack gave status code 402: Payment Required (you probably exceeded the API limit this month).")
-        elif res.status_code == 404: logging.info("TheirStack gave status code 404: Not Found.")
-        elif res.status_code == 405: logging.info("TheirStack gave status code 405: Method not allowed (you probably used some outdated endpoint).")
-        elif res.status_code == 422: logging.info("TheirStack gave status code 422: Unprocessable Entity")
-        else: logging.warning(f"TheirStack gave unknown status code {res.status_code}")
-        
-        # Shut down
-        #get_token_usage()
+        process_status_code(res.status_code)
         return None
-    elif res.status_code == 200: pass
+    else: pass
 
     data = json.loads(res.content)
 
@@ -188,3 +166,12 @@ def get_locations(search_term:str):
         element["selected"] = "No"
 
     return data
+
+
+def process_status_code(code:int):
+    if code == 401: logging.info("TheirStack gave status code 401: Invalid authentication credentials.")
+    elif code == 402: logging.info("TheirStack gave status code 402: Payment Required (you probably exceeded the API limit this month).")
+    elif code == 404: logging.info("TheirStack gave status code 404: Not Found.")
+    elif code == 405: logging.info("TheirStack gave status code 405: Method not allowed (you probably used some outdated endpoint).")
+    elif code == 422: logging.info("TheirStack gave status code 422: Unprocessable Entity")
+    else: logging.warning(f"TheirStack gave unknown status code {code}")

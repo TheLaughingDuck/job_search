@@ -56,7 +56,7 @@ def get_jobs(limit=2, masked_data=True, save_locally=True):
 
     # Retrieve saved job id's, so that they can be excluded from the job query below.
     conn = sqlite3.connect("db.sqlite", isolation_level=None)
-    job_ids = [i[0] for i in conn.execute("SELECT id_theirstack from jobs;").fetchall()]
+    job_ids = [i[0] for i in conn.execute("SELECT id_theirstack from jobs WHERE id_theirstack IS NOT NULL;").fetchall()]
 
     # Get locations for processing below
     locations = json_get_key("keys.json", "locations_v2")

@@ -35,6 +35,10 @@ class JobAppGUI:
         self.sort_column = ""
         self.sort_direction = "ASC"
 
+        # Keep track of whether to mask data
+        # Masked requests do not consume API credits, which may be useful when experimenting with the query parameters.
+        self.mask_data = False
+
         # --- Button events ---
         self.root.bind("<Return>", self.enter_key_pressed)
         
@@ -72,6 +76,9 @@ class JobAppGUI:
         # Show API token usage
         self.api_token_label = tk.Label(filter_frame, text="---", borderwidth=1, relief="groove")
         self.api_token_label.pack(side="left", padx=5)
+
+        # Checkbox regulating whether to mask data or not
+        tk.Checkbutton(filter_frame, text="Mask data", variable=self.mask_data, onvalue=1, offvalue=0, command=self.toggle_mask_setting).pack(side="left", padx=10)
 
         # --- Job List (Treeview) ---
         self.tree = ttk.Treeview(root, columns=("jobtitle", "company", "location", "dateposted", "status", "comment"), show="headings")
@@ -189,7 +196,7 @@ class JobAppGUI:
     
     def find_jobs(self):
         '''Request jobs from TheirStack and update app.'''
-        get_jobs(masked_data=False)
+        get_jobs(masked_data=self.mask_data)
         self.refresh_jobs()
 
         # Check current token usage
@@ -201,6 +208,10 @@ class JobAppGUI:
         except Exception as e:
             logging.warning(f"Unexpected error: {e}")
             messagebox.showwarning(title="Error", message=e)
+    
+    def toggle_mask_setting(self):
+        self.mask_data = False if self.mask_data else True
+        print("Mask setting is", self.mask_data)
 
 
     ###### ^ ###### TOP BUTTONS ###### ^ ######

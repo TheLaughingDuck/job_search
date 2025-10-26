@@ -30,6 +30,11 @@ class JobAppGUI:
         self.retrieved_jobs = 0
         self.job_query = ""
 
+        # These columns keep track of which column is currently sorted, and in which direction.
+        # This is used to invert the sort order if the user presses a column twice.
+        self.sort_column = ""
+        self.sort_direction = "ASC"
+
         # --- Button events ---
         self.root.bind("<Return>", self.enter_key_pressed)
         
@@ -114,7 +119,14 @@ class JobAppGUI:
 
         # Adjust SQL query with relevant ordering
         if sort_by:
-            self.job_query += f" ORDER BY {sort_by}"
+            # Change the sort direction if the same column is clicked twice
+            if self.sort_column == sort_by:
+                self.sort_direction = "ASC" if self.sort_direction == "DESC" else "DESC"
+            
+            # Set the new column to sort
+            self.sort_column = sort_by
+            
+            self.job_query += f" ORDER BY {sort_by} {self.sort_direction}"
         
         # Start cursor
         c = self.conn.cursor()

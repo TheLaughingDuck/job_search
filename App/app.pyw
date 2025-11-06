@@ -288,9 +288,15 @@ class JobAppGUI:
         status_menu.grid(row=10, column=1, padx=5, pady=5)        
 
         tk.Label(win, text="Your personal comments").grid(row=11, column=0, padx=5, pady=5)
-        tk.Entry(win, textvariable=comment_var, width=40).grid(row=11, column=1, padx=5, pady=5)
+        #tk.Entry(win, textvariable=comment_var, width=40).grid(row=11, column=1, padx=5, pady=5)
+        comment_box = tk.Text(win, wrap="word", width=50, height=5)
+        comment_box.insert("1.0", comment_var.get())
+        comment_box.grid(row=11, column=1, padx=5, pady=5)
+        comment_var.set(comment_box.get("1.0", "end-1c"))
 
         def save(job_id=job_id):
+            # Set the comment variable from the comment box
+            comment_var.set(comment_box.get("1.0", "end-1c"))
             c = self.conn.cursor()
             if job_id:
                 c.execute("UPDATE jobs SET job_title=?, company=?, url=?, date_posted=?, location=?, remote=?, hybrid=?, salary_string=?, seniority=?, relevance=?, comment=?, status=? WHERE id=?",

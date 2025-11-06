@@ -243,8 +243,8 @@ class JobAppGUI:
             url_var.set(url)
             dateposted_var.set(dateposted)
             location_var.set(location)
-            remote_var.set(remote)
-            hybrid_var.set(hybrid)
+            remote_var.set("FALSE" if remote is None else remote) # In case remote and hybrid are NULL by default when manually adding a job.
+            hybrid_var.set("FALSE" if hybrid is None else hybrid) # This was the case in releases up to v1.11.3 (In newer versions FALSE is the specified default when the database is created).
             salarystring_var.set(salarystring)
             seniority_var.set(seniority)
             relevance_var.set(relevance)

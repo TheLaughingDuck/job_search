@@ -12,5 +12,27 @@ I created this system when I was in the process of applying for jobs, and daily 
     - Grab the API key, and insert it in the corresponding text box after clicking on **Settings** in the app. Click **Save**.
     - Now you can retrieve job listings automatically by clicking **Find job listings**. The number of used tokens is shown within the app, and resets monthly.
 
+# Editing
+The app comes with buttons to
+- `Add job` (Manually add a job to the database, for example a job listing you found yourself)
+- `Edit job` (Edit data associated with a specific job listing)
+- `Show Description` (Show the posted description of a specific job listing. Good for manually evaluating if a job is relevant.)
+- `Delete job` (Deletes one job that is selected)
+
+# Retrieve new job listings
+The app comes with built-in functionality for retrieving jobs from an online API. To set this up, follow the instructions under "How to use" above. Within the app, the following buttons and information are available.
+- `Settings` (Click to enter your API token, and edit your job preferences. Click `Save settings` when you are finished.)
+    - `Max number of jobs` (Every time you click `Find job listings` at the home screen, up to this many jobs are retrieved. Keep it low to avoid accidentally using up your API tokens.)
+    - `Job titles` (Job titles that are relevant to you. Separate multiple with a comma and no space. For example 'Engineer,Environmental Engineer,Chemist')
+    - `Job titles` (Job titles and/or seniority to *exclude*, mostly this can be ignored, but it can be useful to put 'Senior' here if you are only interested in junior and mid level roles)
+    - `Location` (Search for locations, and select and toggle the relevant ones. You can do this multiple times, to build up a query for jobs in both Stockholm and Berlin at the same time for example.)
+- `Find job listings` (Send a request for jobs to the API. If masking is disabled, this will consume one token for every job.)
+- `Mask data` (Whether or not to mask data. If enabled, important job information is hidden (like company name and URL), but API tokens are not consumed. This is useful if you want to fine-tune your query settings without using up API tokens.)
+
+# Filtering
+The app provides two kinds of filtering on your jobs:
+- `Filter` (Put in a search term, click `Apply`, and the program will filter on jobs where the *company name* or *job title* matches.)
+- `Filter on status` (Select a filter on the job status. This allows you to show only jobs that you have applied to, or got rejected from, or that you haven't applied to yet.)
+
 # Bugs? Errors?
 Please report any bugs, or other strange behaviours by creating an issue! Describe the problem as thoroughly as possible, and consider posting part of the 'LOG.log' file with your description.

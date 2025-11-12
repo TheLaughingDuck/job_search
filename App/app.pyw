@@ -1,5 +1,5 @@
 import tkinter as tk
-from tkinter import ttk, messagebox
+from tkinter import ttk, messagebox, Scrollbar
 import sqlite3
 from queries import get_jobs, get_token_usage, get_locations
 from utils import run_sql, build_db, json_get_key, json_set_key, create_keys_file
@@ -81,7 +81,9 @@ class JobAppGUI:
         tk.Checkbutton(filter_frame, text="Mask data", variable=self.mask_data, onvalue=1, offvalue=0, command=self.toggle_mask_setting).pack(side="left", padx=10)
 
         # --- Job List (Treeview) ---
-        self.tree = ttk.Treeview(root, columns=("jobtitle", "company", "location", "dateposted", "status", "comment"), show="headings")
+        scroll_bar = Scrollbar(root)
+        scroll_bar.pack(side = "right", fill = "y")
+        self.tree = ttk.Treeview(root, columns=("jobtitle", "company", "location", "dateposted", "status", "comment"), show="headings", yscrollcommand=scroll_bar.set)
         self.tree.heading("jobtitle", text="Title", command=lambda: self.refresh_jobs("job_title"))
         self.tree.heading("company", text="Company", command=lambda: self.refresh_jobs("company"))
         self.tree.heading("location", text="Location", command=lambda: self.refresh_jobs("location"))

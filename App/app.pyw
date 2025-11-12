@@ -4,6 +4,7 @@ import sqlite3
 from queries import get_jobs, get_token_usage, get_locations
 from utils import run_sql, build_db, json_get_key, json_set_key, create_keys_file
 import uuid
+import webbrowser
 
 import logging
 logging.basicConfig(filename="LOG.log",
@@ -15,80 +16,101 @@ logging.info("Started App")
 
 
 class JobAppGUI:
+    
+    #####################################
+    ###### V ###### SETUP ###### V ######
+    #####################################
+
     def __init__(self, root):
+        # --- Setup ---
         self.root = root
         self.root.title("Job Applications Manager")
 
-        # Create database and connect
         build_db(db="db.sqlite")
         self.conn = sqlite3.connect("db.sqlite")
-
-        # Create keys file (if it doesn't already exist)
+        
         create_keys_file()
 
-        # Environment variables
+
+        # --- Environment variables ---
         self.retrieved_jobs = 0
         self.job_query = ""
-
-        # These columns keep track of which column is currently sorted, and in which direction.
-        # This is used to invert the sort order if the user presses a column twice.
+        self.mask_data = False # Masked requests do not consume API credits, which may be useful when experimenting with the query parameters.
         self.sort_column = ""
-        self.sort_direction = "ASC"
+        self.sort_direction = "ASC" # This is used to invert the sort order if the user presses a column twice.
 
-        # Keep track of whether to mask data
-        # Masked requests do not consume API credits, which may be useful when experimenting with the query parameters.
-        self.mask_data = False
 
-        # --- Button events ---
+        # --- Keyboard button events ---
         self.root.bind("<Return>", self.enter_key_pressed)
+
+
+        # --- Frames and Tree (used to organize the home page) ---
+        toprow_frame = tk.Frame(root)
+        toprow_frame.pack(fill="x", padx=10, pady=5)
+
+        edit_frame = tk.Frame(toprow_frame, borderwidth=1,  relief="ridge")
+        edit_frame.pack(side="left", padx=10, pady=5)
+
+        query_frame = tk.Frame(toprow_frame, borderwidth=1, relief="ridge")
+        query_frame.pack(side="left", padx=10, pady=5)
+
+        bottomrow_frame = tk.Frame(root)
+        bottomrow_frame.pack(fill="x", padx=10, pady=5)
+
+        search_frame = tk.Frame(bottomrow_frame, borderwidth=1, relief="ridge")
+        search_frame.pack(side="left", padx=10, pady=0)
+
+        filterstatus_frame = tk.Frame(bottomrow_frame, borderwidth=1, relief="ridge")
+        filterstatus_frame.pack(side="left", padx=10, pady=5)
+
+        scroll_bar = Scrollbar(root, width=20)
+        scroll_bar.pack(side = "right", fill = "y")
+        self.tree = ttk.Treeview(root, columns=("jobtitle", "company", "location", "dateposted", "status", "comment"), show="headings", yscrollcommand=scroll_bar.set)
         
-        # --- Top Buttons ---
-        top_frame = tk.Frame(root)
-        top_frame.pack(fill="x", padx=10, pady=5)
 
-        tk.Button(top_frame, text="Add Job", command=self.add_job).pack(side="left", padx=5)
-        tk.Button(top_frame, text="Edit Job", command=self.edit_job).pack(side="left", padx=5)
-        tk.Button(top_frame, text="Show Description", command=self.show_description).pack(side="left", padx=5)
-        tk.Button(top_frame, text="Delete Job", command=self.delete_job).pack(side="left", padx=5)
-        tk.Button(top_frame, text="Settings", command=self.settings_window).pack(side="left", padx=5)
+        # --- Edit related buttons ---
+        tk.Button(edit_frame, text="Add Job", command=self.add_job).pack(side="left", padx=5, pady=10)
+        tk.Button(edit_frame, text="Edit Job", command=self.edit_job).pack(side="left", padx=5, pady=10)
+        tk.Button(edit_frame, text="Show Description", command=self.show_description).pack(side="left", padx=5, pady=10)
+        tk.Button(edit_frame, text="Delete Job", command=self.delete_job).pack(side="left", padx=5, pady=10)
 
-        # --- Filter / Sort ---
-        filter_frame = tk.Frame(root)
-        filter_frame.pack(fill="x", padx=10, pady=5)
 
-        tk.Label(filter_frame, text="Filter:").pack(side="left")
+        # --- Query buttons and information ---
+        tk.Button(query_frame, text="Settings", command=self.settings_window).pack(side="left", padx=5, pady=10)
+        tk.Button(query_frame, text="Find job listings", command=self.find_jobs).pack(side="left", padx=10)
+        self.api_token_label = tk.Label(query_frame, text="---", borderwidth=1, relief="groove") # Show API token usage
+        self.api_token_label.pack(side="left", padx=5)
+        tk.Checkbutton(query_frame, text="Mask data (Important job details will be hidden,\nbut the query will not expend any API tokens.)", variable=self.mask_data, onvalue=1, offvalue=0, command=self.toggle_mask_setting).pack(side="left", padx=10)
+
+
+        # --- Developer plug ---
+        tk.Button(toprow_frame, text="This program was developed by \nSimon Jorstedt", command=self.creator, borderwidth=1, relief="groove").pack(side="right", padx=5)
+
+
+        # --- Filter on search terms ---
+        tk.Label(search_frame, text="Filter:").pack(side="left", pady=10)
         self.filter_var = tk.StringVar()
-        tk.Entry(filter_frame, textvariable=self.filter_var).pack(side="left", padx=5)
-        tk.Button(filter_frame, text="Apply", command=self.refresh_jobs).pack(side="left", padx=5)
+        tk.Entry(search_frame, textvariable=self.filter_var).pack(side="left", padx=5)
+        tk.Button(search_frame, text="Apply", command=self.refresh_jobs).pack(side="left", padx=5)
+        
+
+        # --- Filter on status  ---
+        tk.Label(filterstatus_frame, text="Filter on status:").pack(side="left", padx=(0,0), pady=10)
         
         self.filter_setting = tk.StringVar()
         self.filter_setting.set("Show all")
         filter_options = ['Show all', 'Show live applications', 'Show applicable', 'Show rejected']
-        tk.OptionMenu(filter_frame, self.filter_setting, *filter_options, command=lambda _: self.refresh_jobs()).pack(side="left", padx=5)
-        #tk.Button(filter_frame, text="Toggle Living Applications", command=self.show_live_applications).pack(side="left", padx=5)
-        #tk.Button(filter_frame, text="Toggle Applicable", command=self.toggle_applicable).pack(side="left", padx=5)
-        self.retrieved_jobs_label = tk.Label(filter_frame, text="---", borderwidth=1, relief="groove")
+        tk.OptionMenu(filterstatus_frame, self.filter_setting, *filter_options, command=lambda _: self.refresh_jobs()).pack(side="left", padx=5)
+        
+        self.retrieved_jobs_label = tk.Label(filterstatus_frame, text="---", borderwidth=1, relief="groove", padx=2)
         self.retrieved_jobs_label.pack(side="left", padx=20)
 
-        # API Request button
-        tk.Button(filter_frame, text="Find job listings", command=self.find_jobs).pack(side="left", padx=10)
-
-        # Show API token usage
-        self.api_token_label = tk.Label(filter_frame, text="---", borderwidth=1, relief="groove")
-        self.api_token_label.pack(side="left", padx=5)
-
-        # Checkbox regulating whether to mask data or not
-        tk.Checkbutton(filter_frame, text="Mask data", variable=self.mask_data, onvalue=1, offvalue=0, command=self.toggle_mask_setting).pack(side="left", padx=10)
 
         # --- Job List (Treeview) ---
-        scroll_bar = Scrollbar(root)
-        scroll_bar.pack(side = "right", fill = "y")
-        self.tree = ttk.Treeview(root, columns=("jobtitle", "company", "location", "dateposted", "status", "comment"), show="headings", yscrollcommand=scroll_bar.set)
         self.tree.heading("jobtitle", text="Title", command=lambda: self.refresh_jobs("job_title"))
         self.tree.heading("company", text="Company", command=lambda: self.refresh_jobs("company"))
         self.tree.heading("location", text="Location", command=lambda: self.refresh_jobs("location"))
         self.tree.heading("dateposted", text="Date posted", command=lambda: self.refresh_jobs("date_posted"))
-        #self.tree.heading("description", text="Description", command=lambda: self.sort_by("description"))
         self.tree.heading("status", text="Status", command=lambda: self.refresh_jobs("status"))
         self.tree.heading("comment", text="Comment", command=lambda: self.refresh_jobs("comment"))
         self.tree.pack(fill="both", expand=True, padx=10, pady=5)
@@ -96,71 +118,20 @@ class JobAppGUI:
         # Refresh the list of jobs (from the local database)
         self.refresh_jobs()
 
-    def refresh_jobs(self, sort_by=None):
-        # Clear existing rows
-        for row in self.tree.get_children():
-            self.tree.delete(row)
-        
-        # Set up start of query
-        self.job_query = "SELECT id, job_title, company, location, date_posted, status, comment FROM jobs"
-
-        # Create variables to collect search parameters, and assemble the where query
-        params = []
-        where_query = []
-
-        # Check whether any user-specified filter applies
-        if self.filter_setting.get() != "Show all" or self.filter_var.get():
-            self.job_query += " WHERE "
-
-            # Adjust SQL query with relevant text FILTER
-            if self.filter_var.get():
-                where_query.append("(company LIKE ? OR job_title LIKE ?)")
-                like = f"%{self.filter_var.get()}%"
-                params.extend([like, like])
-
-        # Adjust SQL query with relevant status FILTER
-        if self.filter_setting.get() == "Show all": pass
-        elif self.filter_setting.get() == "Show live applications": where_query.append("status = 'Applied'")
-        elif self.filter_setting.get() == "Show applicable": where_query.append("status = '---'")
-        elif self.filter_setting.get() == "Show rejected": where_query.append("status = 'Rejected'")
-
-        self.job_query += " AND ".join(where_query)
-
-        # Adjust SQL query with relevant ordering
-        if sort_by:
-            # Change the sort direction if the same column is clicked twice
-            if self.sort_column == sort_by:
-                self.sort_direction = "ASC" if self.sort_direction == "DESC" else "DESC"
-            
-            # Set the new column to sort
-            self.sort_column = sort_by
-            
-            self.job_query += f" ORDER BY {sort_by} {self.sort_direction}"
-        
-        # Start cursor
-        c = self.conn.cursor()
-        
-        # Perform query and insert the results in the UI table
-        #print(f"The job query is:\n\t{self.job_query}")
-        for row in c.execute(self.job_query, params):
-            self.tree.insert("", "end", iid=row[0], values=row[1:])
-        
-        # Update label with the number of shown jobs
-        self.retrieved_jobs = len(self.tree.get_children())
-        self.retrieved_jobs_label.configure(text="Showing {n_jobs} jobs".format(n_jobs=self.retrieved_jobs))
-        self.retrieved_jobs_label.update()
-
-        # Update the label that shows how many tokens have been used
-        # No immediate need to this when just updating the shown list. Remove.
-        #self.update_token_usage_label()
-    
-    def enter_key_pressed(self, event):
-        '''Refresh the UI table when 'Return' is pressed.'''
-        #print(event.char, event.keysym, event.keycode)
-        self.refresh_jobs()
+    #####################################
+    ###### ^ ###### SETUP ###### ^ ######
+    #####################################
 
 
+
+
+
+
+
+
+    ###########################################
     ###### V ###### TOP BUTTONS ###### V ######
+    ###########################################
 
     def add_job(self):
         self.edit_window(job_id=False)
@@ -175,7 +146,7 @@ class JobAppGUI:
     def show_description(self):
         selected = self.tree.focus()
         if not selected:
-            messagebox.showwarning("Select Job", "Please select a job.")
+            messagebox.showwarning("Select Job", "Please select a job to show its Description.")
             return
         self.description_window(job_id=selected)
     
@@ -194,7 +165,9 @@ class JobAppGUI:
             
             self.refresh_jobs()
         else: return
-
+    
+    def creator(self):
+        webbrowser.open("https://github.com/TheLaughingDuck/job_search")
     
     def find_jobs(self):
         '''Request jobs from TheirStack and update app.'''
@@ -213,12 +186,25 @@ class JobAppGUI:
     
     def toggle_mask_setting(self):
         self.mask_data = False if self.mask_data else True
-        print("Mask setting is", self.mask_data)
+        #print("Mask setting is", self.mask_data)
 
 
+    ###########################################
     ###### ^ ###### TOP BUTTONS ###### ^ ######
+    ###########################################
 
 
+
+
+
+
+
+
+    ###########################################
+    ###### V ###### SUB WINDOWS ###### V ######
+    ###########################################
+
+    #### EDIT/ADD WINDOW
     def edit_window(self, job_id):
         win = tk.Toplevel(self.root)
         win.title("Edit Job" if job_id else "Add Job")
@@ -313,6 +299,8 @@ class JobAppGUI:
 
         tk.Button(win, text="Save", font=("Courier", 20), width=10, command=save).grid(row=12, column=0, columnspan=2, pady=10)
     
+
+    #### SETTINGS WINDOW
     def settings_window(self):
         win = tk.Toplevel(self.root)
         win.title("Settings")
@@ -344,14 +332,6 @@ class JobAppGUI:
         job_title_not.set(",".join(json_get_key("keys.json", "job_title_not")))
         tk.Label(top_frame, text="Exclude job titles or seniority\n(e.g. 'Senior', separate multiple with commas, no space)").grid(row=3, column=0, padx=5, pady=5)
         tk.Entry(top_frame, textvariable=job_title_not, width=40).grid(row=3, column=1, padx=5, pady=5)
-
-        # # Location checkboxes
-        # locations = json_get_key("keys.json", "locations")
-        # loc_keys = list(locations.keys())
-        # loc_vars = {key: tk.IntVar(value=locations[key][0]) for key in loc_keys}
-        # tk.Label(win, text="Select locations you are interested in.").grid(row=4, column=0)
-        # for i, key in zip(range(0, len(loc_keys)), loc_keys):
-        #     tk.Checkbutton(win, text=key, variable=loc_vars[key], onvalue=1, offvalue=0).grid(row=5+i, column=0)
         
         bottom_frame = tk.Frame(win)
         bottom_frame.pack(fill="x", padx=10, pady=5)
@@ -380,12 +360,6 @@ class JobAppGUI:
                 json_set_key(fp="keys.json", key="job_title_or", val=job_title_or.get().split(","))
                 json_set_key(fp="keys.json", key="job_title_not", val=job_title_not.get().split(","))
                 json_set_key(fp="keys.json", key="limit", val=requestlimit_var.get())
-
-                # # Update locations in keys.json
-                # for key in loc_keys:
-                #     locations[key] = [loc_vars[key].get(), locations[key][1]]
-                # json_set_key(fp="keys.json", key="locations", val=locations)
-                #print("\nAbout to save locations from:\n\t", "\n\t".join([i["name"]+"     "+i["selected"] for i in self.locations]))
                 json_set_key(fp="keys.json", key="locations_v2", val=[dic for dic in self.locations if dic['selected'] == "Yes"])
 
                 # Destroy the window
@@ -397,27 +371,7 @@ class JobAppGUI:
         tk.Button(bottom_frame, text="Save settings", font=("Courier", 20), width=20, command=save).pack(side="bottom", pady=10)#.grid(row=30, column=0, columnspan=2, pady=10)
 
 
-
-    # def error_window(self, message="..."):
-    #     win = tk.Toplevel(self.root)
-    #     win.title("ERROR")
-
-    #     message = "An error occurred, outputting the following error message:\n\n" + str(message) + "\n\nSee the log file for further details."
-
-    #     tk.Label(win, text=message).pack(side="top")
-    #     tk.Button(win, text="OK", font=("Courier", 8), width=5, command=win.destroy).pack(side="bottom", pady=10)
-    
-    def update_token_usage_label(self):
-        '''Updates the token usage label, and returns the number of used and total tokens'''
-        usage = get_token_usage()
-        self.api_token_label.configure(text="Used {} out of {} tokens".format(usage[0], usage[1]))
-        self.api_token_label.update()
-
-        return usage
-
-        
-    
-
+    #### DESCRIPTION WINDOW
     def description_window(self, job_id=None):
         '''
         Open a window showing the description of the selected job.
@@ -438,7 +392,90 @@ class JobAppGUI:
         scroll = tk.Scrollbar(win, command=text.yview)
         text.config(yscrollcommand=scroll.set)
         scroll.pack(side="right", fill="y")
+    
+    ###########################################
+    ###### ^ ###### SUB WINDOWS ###### ^ ######
+    ###########################################
+    
 
+
+
+
+
+
+
+    ##################################################
+    ###### V ###### INTERNAL FUNCTIONS ###### V ######
+    ##################################################
+
+    def refresh_jobs(self, sort_by=None):
+        # Clear existing rows
+        for row in self.tree.get_children():
+            self.tree.delete(row)
+        
+        # Set up start of query
+        self.job_query = "SELECT id, job_title, company, location, date_posted, status, comment FROM jobs"
+
+        # Create variables to collect search parameters, and assemble the where query
+        params = []
+        where_query = []
+
+        # Check whether any user-specified filter applies
+        if self.filter_setting.get() != "Show all" or self.filter_var.get():
+            self.job_query += " WHERE "
+
+            # Adjust SQL query with relevant text FILTER
+            if self.filter_var.get():
+                where_query.append("(company LIKE ? OR job_title LIKE ?)")
+                like = f"%{self.filter_var.get()}%"
+                params.extend([like, like])
+
+        # Adjust SQL query with relevant status FILTER
+        if self.filter_setting.get() == "Show all": pass
+        elif self.filter_setting.get() == "Show live applications": where_query.append("status = 'Applied'")
+        elif self.filter_setting.get() == "Show applicable": where_query.append("status = '---'")
+        elif self.filter_setting.get() == "Show rejected": where_query.append("status = 'Rejected'")
+
+        self.job_query += " AND ".join(where_query)
+
+        # Adjust SQL query with relevant ordering
+        if sort_by:
+            # Change the sort direction if the same column is clicked twice
+            if self.sort_column == sort_by:
+                self.sort_direction = "ASC" if self.sort_direction == "DESC" else "DESC"
+            
+            # Set the new column to sort
+            self.sort_column = sort_by
+            
+            self.job_query += f" ORDER BY {sort_by} {self.sort_direction}"
+        
+        # Start cursor
+        c = self.conn.cursor()
+        
+        # Perform query and insert the results in the UI table
+        for row in c.execute(self.job_query, params):
+            self.tree.insert("", "end", iid=row[0], values=row[1:])
+        
+        # Update label with the number of shown jobs
+        self.retrieved_jobs = len(self.tree.get_children())
+        self.retrieved_jobs_label.configure(text="Showing {n_jobs} jobs".format(n_jobs=self.retrieved_jobs))
+        self.retrieved_jobs_label.update()
+
+
+    def enter_key_pressed(self, event):
+        '''Refresh the UI table when 'Return' is pressed.'''
+        #print(event.char, event.keysym, event.keycode)
+        self.refresh_jobs()
+
+
+    def update_token_usage_label(self):
+        '''Updates the token usage label, and returns the number of used and total tokens'''
+        usage = get_token_usage()
+        self.api_token_label.configure(text="Used {} out of {} tokens".format(usage[0], usage[1]))
+        self.api_token_label.update()
+
+        return usage
+    
 
     def update_location_selection(self):
         '''
@@ -456,6 +493,7 @@ class JobAppGUI:
         
         #print("\nself.locations after update:\n\t", "\n\t".join([i["name"]+"     "+i["selected"] for i in self.locations]))
     
+
     def refresh_locations(self, search=True):
         '''
         Search for locatons related to the search_term.
@@ -496,6 +534,16 @@ class JobAppGUI:
         # Insert the relevant locations into the tree
         for row in self.locations:
             self.tree_locs.insert("", "end", iid=row['id'], values=[row['name'], row['country_name'], row['selected']])
+
+    ##################################################
+    ###### ^ ###### INTERNAL FUNCTIONS ###### ^ ######
+    ##################################################
+
+
+
+
+
+
 
 
 if __name__ == "__main__":

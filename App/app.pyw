@@ -6,6 +6,8 @@ from utils import run_sql, build_db, json_get_key, json_set_key, create_keys_fil
 import uuid
 import webbrowser
 
+from style import HoverButton, HoverOptionMenu
+
 import logging
 logging.basicConfig(filename="LOG.log",
                     filemode="a",
@@ -69,29 +71,29 @@ class JobAppGUI:
         
 
         # --- Edit related buttons ---
-        tk.Button(edit_frame, text="Add Job", command=self.add_job).pack(side="left", padx=5, pady=10)
-        tk.Button(edit_frame, text="Edit Job", command=self.edit_job).pack(side="left", padx=5, pady=10)
-        tk.Button(edit_frame, text="Show Description", command=self.show_description).pack(side="left", padx=5, pady=10)
-        tk.Button(edit_frame, text="Delete Job", command=self.delete_job).pack(side="left", padx=5, pady=10)
+        HoverButton(edit_frame, text="Add Job", command=self.add_job).pack(side="left", padx=5, pady=10)
+        HoverButton(edit_frame, text="Edit Job", command=self.edit_job).pack(side="left", padx=5, pady=10)
+        HoverButton(edit_frame, text="Show Description", command=self.show_description).pack(side="left", padx=5, pady=10)
+        HoverButton(edit_frame, text="Delete Job", command=self.delete_job).pack(side="left", padx=5, pady=10)
 
 
         # --- Query buttons and information ---
-        tk.Button(query_frame, text="Settings", command=self.settings_window).pack(side="left", padx=5, pady=10)
-        tk.Button(query_frame, text="Find job listings", command=self.find_jobs).pack(side="left", padx=10)
+        HoverButton(query_frame, text="Settings", command=self.settings_window).pack(side="left", padx=5, pady=10)
+        HoverButton(query_frame, text="Find job listings", command=self.find_jobs).pack(side="left", padx=10)
         self.api_token_label = tk.Label(query_frame, text="---", borderwidth=1, relief="groove") # Show API token usage
         self.api_token_label.pack(side="left", padx=5)
         tk.Checkbutton(query_frame, text="Mask data (Important job details will be hidden,\nbut the query will not expend any API tokens.)", variable=self.mask_data, onvalue=1, offvalue=0, command=self.toggle_mask_setting).pack(side="left", padx=10)
 
 
         # --- Developer plug ---
-        tk.Button(toprow_frame, text="This program was developed by \nSimon Jorstedt", command=self.creator, borderwidth=1, relief="groove").pack(side="right", padx=5)
+        HoverButton(toprow_frame, text="This program was developed by \nSimon Jorstedt", command=self.creator, borderwidth=1, relief="groove").pack(side="right", padx=5)
 
 
         # --- Filter on search terms ---
         tk.Label(search_frame, text="Filter:").pack(side="left", pady=10)
         self.filter_var = tk.StringVar()
         tk.Entry(search_frame, textvariable=self.filter_var).pack(side="left", padx=5)
-        tk.Button(search_frame, text="Apply", command=self.refresh_jobs).pack(side="left", padx=5)
+        HoverButton(search_frame, text="Apply", command=self.refresh_jobs).pack(side="left", padx=5)
         
 
         # --- Filter on status  ---
@@ -100,9 +102,8 @@ class JobAppGUI:
         self.filter_setting = tk.StringVar()
         self.filter_setting.set("Show all")
         filter_options = ['Show all', 'Show live applications', 'Show applicable', 'Show rejected']
-        tk.OptionMenu(filterstatus_frame, self.filter_setting, *filter_options, command=lambda _: self.refresh_jobs()).pack(side="left", padx=5)
-        
-        self.retrieved_jobs_label = tk.Label(filterstatus_frame, text="---", borderwidth=1, relief="groove", padx=2)
+        HoverOptionMenu(filterstatus_frame, self.filter_setting, command=lambda _: self.refresh_jobs(), *filter_options).pack(side="left", padx=5)
+        self.retrieved_jobs_label = tk.Label(bottomrow_frame, text="---", borderwidth=1, relief="groove", padx=2)
         self.retrieved_jobs_label.pack(side="left", padx=20)
 
 
@@ -268,11 +269,11 @@ class JobAppGUI:
         tk.Entry(win, textvariable=seniority_var, width=40).grid(row=8, column=1, padx=5, pady=5)
 
         tk.Label(win, text="Relevance").grid(row=9, column=0, padx=5, pady=5)
-        relevance_menu = tk.OptionMenu(win, relevance_var, '---', 'Perfect', 'Relevant', 'Vaguely relevant', 'Irrelevant')
+        relevance_menu = HoverOptionMenu(win, relevance_var, '---', 'Perfect', 'Relevant', 'Vaguely relevant', 'Irrelevant')
         relevance_menu.grid(row=9, column=1, padx=5, pady=5)
 
         tk.Label(win, text="Status").grid(row=10, column=0, padx=5, pady=5)
-        status_menu = tk.OptionMenu(win, status_var, '---', 'Applied', 'Rejected', 'I lack requirements', 'Closed')
+        status_menu = HoverOptionMenu(win, status_var, '---', 'Applied', 'Rejected', 'I lack requirements', 'Closed')
         status_menu.grid(row=10, column=1, padx=5, pady=5)        
 
         tk.Label(win, text="Your personal comments").grid(row=11, column=0, padx=5, pady=5)
@@ -297,7 +298,7 @@ class JobAppGUI:
             self.refresh_jobs()
             win.destroy()
 
-        tk.Button(win, text="Save", font=("Courier", 20), width=10, command=save).grid(row=12, column=0, columnspan=2, pady=10)
+        HoverButton(win, text="Save", font=("Courier", 20), width=10, command=save).grid(row=12, column=0, columnspan=2, pady=10)
     
 
     #### SETTINGS WINDOW
@@ -340,8 +341,8 @@ class JobAppGUI:
         tk.Label(bottom_frame, text="Filter:").pack(side="left", padx=5)
         self.location_filter_var = tk.StringVar()
         tk.Entry(bottom_frame, textvariable=self.location_filter_var).pack(side="left", padx=5)
-        tk.Button(bottom_frame, text="Search", command=self.refresh_locations).pack(side="left", padx=5)
-        tk.Button(bottom_frame, text="Toggle", command=self.update_location_selection).pack(side="left", padx=5)
+        HoverButton(bottom_frame, text="Search", command=self.refresh_locations).pack(side="left", padx=5)
+        HoverButton(bottom_frame, text="Toggle", command=self.update_location_selection).pack(side="left", padx=5)
         
         self.tree_locs = ttk.Treeview(win, columns=("name", "country", "is_selected"), show="headings")
         self.tree_locs.heading("name", text="Name", command=lambda: self.refresh_jobs("job_title"))
@@ -368,7 +369,7 @@ class JobAppGUI:
                 logging.info(e)
                 messagebox.showerror(title="Error", message=e)
 
-        tk.Button(bottom_frame, text="Save settings", font=("Courier", 20), width=20, command=save).pack(side="bottom", pady=10)#.grid(row=30, column=0, columnspan=2, pady=10)
+        HoverButton(bottom_frame, text="Save settings", font=("Courier", 20), width=20, command=save).pack(side="bottom", pady=10)#.grid(row=30, column=0, columnspan=2, pady=10)
 
 
     #### DESCRIPTION WINDOW

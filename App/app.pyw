@@ -116,6 +116,20 @@ class JobAppGUI:
         self.tree.heading("comment", text="Comment", command=lambda: self.refresh_jobs("comment"))
         self.tree.pack(fill="both", expand=True, padx=10, pady=5)
 
+        # Retrieve saved column widths
+        column_widths = {name: width for name, width in zip(self.tree["columns"], json_get_key("keys.json", "treeview_column_widths"))}
+        
+        # Set column widths
+        self.tree.column("jobtitle", width=column_widths["jobtitle"])
+        self.tree.column("company", width=column_widths["company"])
+        self.tree.column("location", width=column_widths["location"])
+        self.tree.column("dateposted", width=column_widths["dateposted"])
+        self.tree.column("status", width=column_widths["status"])
+        self.tree.column("comment", width=column_widths["comment"])
+
+        # Button to save current column widths
+        HoverButton(bottomrow_frame, text="Save column widths", command=self.save_column_widths).pack(side="right")
+
         # Refresh the list of jobs (from the local database)
         self.refresh_jobs()
 
@@ -536,6 +550,11 @@ class JobAppGUI:
         # Insert the relevant locations into the tree
         for row in self.locations:
             self.tree_locs.insert("", "end", iid=row['id'], values=[row['name'], row['country_name'], row['selected']])
+    
+
+    def save_column_widths(self):
+        # Save the column widths in the order in which the columns appear (left to right)
+        json_set_key("keys.json", "treeview_column_widths", [self.tree.column(i)["width"] for i in list(self.tree["columns"])])
 
     ##################################################
     ###### ^ ###### INTERNAL FUNCTIONS ###### ^ ######

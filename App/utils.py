@@ -151,7 +151,10 @@ def create_keys_file(fp="keys.json"):
                 "Norrkoping": [0, {'id': '2688368'}],
                 "Norrkopings Kommun": [0, {'id': '2688367'}]
             },
-            "locations_v2": []
+            "locations_v2": [],
+
+            # The column widths, in the order in which the columns appear (left to right) (see 'app.pyw')
+            "treeview_column_widths": [228, 128, 130, 76, 117, 559]
         }
 
         # Save the keys file

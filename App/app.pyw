@@ -8,6 +8,8 @@ import webbrowser
 
 from style import HoverButton, HoverOptionMenu
 
+from PIL import Image, ImageTk
+
 import logging
 logging.basicConfig(filename="LOG.log",
                     filemode="a",
@@ -26,13 +28,14 @@ class JobAppGUI:
     def __init__(self, root):
         # --- Setup ---
         self.root = root
-        self.root.title("Job Applications Manager")
+        self.root.title("Job Application Manager")
 
         build_db(db="db.sqlite")
         self.conn = sqlite3.connect("db.sqlite")
         
         create_keys_file()
 
+        self.root.wm_iconphoto(False, ImageTk.PhotoImage(Image.open("DuckHead.png")))
 
         # --- Environment variables ---
         self.retrieved_jobs = 0

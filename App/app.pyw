@@ -65,10 +65,10 @@ class JobAppGUI:
         filterstatus_frame = tk.Frame(bottomrow_frame, borderwidth=1, relief="ridge")
         filterstatus_frame.pack(side="left", padx=10, pady=5)
 
-        scroll_bar = Scrollbar(root, width=20)
+        self.tree = ttk.Treeview(root, columns=("jobtitle", "company", "location", "dateposted", "status", "comment"), show="headings")
+        scroll_bar = Scrollbar(root, width=20, command=self.tree.yview)
         scroll_bar.pack(side = "right", fill = "y")
-        self.tree = ttk.Treeview(root, columns=("jobtitle", "company", "location", "dateposted", "status", "comment"), show="headings", yscrollcommand=scroll_bar.set)
-        
+        self.tree.config(yscrollcommand=scroll_bar.set)
 
         # --- Edit related buttons ---
         HoverButton(edit_frame, text="Add Job", command=self.add_job).pack(side="left", padx=5, pady=10)
@@ -386,6 +386,7 @@ class JobAppGUI:
             job_description = c.execute("SELECT description FROM jobs WHERE id=?", (job_id,)).fetchall()[0]
 
         text = tk.Text(win, wrap="word", width=50, height=15)
+        text.pack(side="left", fill="y")
         text.insert("1.0", job_description)
         text.config(state="disabled")
         text.pack(fill="both", expand=True, padx=10, pady=10)

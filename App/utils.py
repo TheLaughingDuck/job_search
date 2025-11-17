@@ -1,6 +1,7 @@
 import os
 import sys
 import sqlite3
+import uuid
 
 import logging
 logging.basicConfig(filename="LOG.log",
@@ -82,6 +83,25 @@ def build_db(db="db.sqlite"):
             ''')
     except Exception as e:
         logging.info(e)
+    
+
+    try:
+        # If there are no jobs in the database, add some example jobs
+        if len(conn.execute("SELECT id FROM jobs;").fetchall()) == 0:
+
+            conn.execute(f"INSERT INTO jobs (id, job_title, company, date_posted, status, relevance, description, location, comment) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);",
+                         (uuid.uuid4().__str__(), 'Pikeman', 'Alfred Nobleman', '1653-02-18', '---', 'Relevant', 'We need a strong, dependable, and expendable man to hold a long pike and point it against the enemeny. Similar previous experience is highly preferred.', 'Switzerland', 'Seems like a good job with nice career prospects.'))
+            
+            conn.execute(f"INSERT INTO jobs (id, job_title, company, date_posted, status, relevance, description, location, comment) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);",
+                         (uuid.uuid4().__str__(), 'Receptionist', 'The shady hotel by the station', '2013-05-29', 'Applied', 'Relevant', 'If you can breathe and talk, you are perfect for this job.', 'Stockholm', 'Good place to work.'))
+            
+            conn.execute(f"INSERT INTO jobs (id, job_title, company, date_posted, status, relevance, description, location, comment) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);",
+                         (uuid.uuid4().__str__(), 'Player Character', 'Adventurer\'s Guild', '357-01-07', 'Rejected', 'Perfect', 'We need a level 5+ cleric for our party, because nobody wants to be the party healer. Pay will be discussed after you survive 2 sessions.', 'City of Blades', 'They rejected me because I named my character Claire Ike.'))
+            
+            conn.commit()
+    except Exception as e:
+        logging.info(e)
+
 
 
 
@@ -162,4 +182,5 @@ def create_keys_file(fp="keys.json"):
             json.dump(keys, f, indent=4)
 
     else:
-        logging.info("Attempted to create 'keys.json': it already exists.")
+        pass
+        #logging.info("Attempted to create 'keys.json': it already exists.")
